@@ -51,9 +51,14 @@ export interface Scenario {
   id: string
   name: string
   type: 'attack' | 'benign'
+  threat_family?: string
   description: string
+  objective?: string
   default_budget: number
   invariant: string
+  supported_modes?: string[]
+  required_tools?: string[]
+  observable_outcome?: string
 }
 
 export interface RunRecord {

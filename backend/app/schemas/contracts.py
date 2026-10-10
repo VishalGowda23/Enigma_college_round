@@ -63,7 +63,26 @@ class ReasonCode(str, Enum):
     ALLOWLIST_MATCH = "ALLOWLIST_MATCH"
     UNAUTHORIZED_RECIPIENT = "UNAUTHORIZED_RECIPIENT"
     DATA_EXFILTRATION_DETECTED = "DATA_EXFILTRATION_DETECTED"
+    UNAUTHORIZED_TOOL_CALL = "UNAUTHORIZED_TOOL_CALL"
+    PRIVILEGE_ESCALATION_DETECTED = "PRIVILEGE_ESCALATION_DETECTED"
+    MEMORY_INJECTION_DETECTED = "MEMORY_INJECTION_DETECTED"
+    CREDENTIAL_LEAK_DETECTED = "CREDENTIAL_LEAK_DETECTED"
+    OBFUSCATION_BYPASS_DETECTED = "OBFUSCATION_BYPASS_DETECTED"
     NO_POLICY_APPLIED = "NO_POLICY_APPLIED"
+
+class ScenarioDefinition(BaseModel):
+    id: str
+    name: str
+    type: str  # "attack" | "benign"
+    threat_family: str
+    description: str
+    objective: str
+    invariant: str
+    default_budget: int = 1
+    supported_modes: List[str] = Field(default_factory=lambda: ["deterministic", "live_model"])
+    required_tools: List[str] = Field(default_factory=list)
+    observable_outcome: str = ""
+    attack_input: str = ""
 
 class RunContext(BaseModel):
     run_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -127,3 +146,17 @@ class Ticket(BaseModel):
     body: str
     is_malicious: bool = False
     expected_exfiltration_recipient: Optional[str] = None
+
+class CustomerNote(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    customer_id: str
+    note: str
+    created_by: str = "operator"
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class KnowledgeArticle(BaseModel):
+    id: str
+    title: str
+    content: str
+    category: str
+    is_poisoned: bool = False

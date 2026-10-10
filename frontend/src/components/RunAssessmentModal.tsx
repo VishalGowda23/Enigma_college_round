@@ -80,40 +80,48 @@ export const RunAssessmentModal: React.FC<RunAssessmentModalProps> = ({
 
           {/* Scenario Selection */}
           <div>
-            <label className="block font-semibold text-[#202A25] mb-1.5 uppercase text-[10px] tracking-wider text-[#859087]">
-              Select Threat Scenario
-            </label>
-            <div className="space-y-2">
-              {scenarios.map((sc) => (
-                <div
-                  key={sc.id}
-                  onClick={() => setSelectedScenario(sc.id)}
-                  className={`p-3 rounded-xl border transition-all cursor-pointer ${
-                    selectedScenario === sc.id
-                      ? 'bg-[#EEF5E9] border-[#76A889] shadow-2xs font-semibold'
-                      : 'bg-[#FFFEFA] border-[#DCE7D8] hover:bg-[#F4FAF1]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#202A25] font-semibold">{sc.name}</span>
-                    <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${
-                        sc.type === 'attack'
-                          ? 'bg-[#FCE8E2] text-[#C94D3B]'
-                          : 'bg-[#BDEBD6]/50 text-[#1E4D36]'
-                      }`}
-                    >
-                      {sc.type}
-                    </span>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="font-semibold text-[#202A25] uppercase text-[10px] tracking-wider text-[#859087]">
+                Select Threat Scenario ({scenarios.length} Available)
+              </label>
+            </div>
+
+            <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+              {scenarios.map((sc) => {
+                const isSelected = selectedScenario === sc.id
+                return (
+                  <div
+                    key={sc.id}
+                    onClick={() => setSelectedScenario(sc.id)}
+                    className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#EEF5E9] border-[#438A68] ring-2 ring-[#438A68]/30 shadow-2xs font-semibold'
+                        : 'bg-[#FFFEFA] border-[#DCE7D8] hover:bg-[#F4FAF1]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[#202A25] font-semibold text-xs truncate">{sc.name}</span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="font-mono text-[9px] text-[#4E8CCB] bg-[#E5F0FC] px-1 py-0.2 rounded font-bold">
+                          {sc.invariant}
+                        </span>
+                        <span
+                          className={`px-1.5 py-0.2 rounded text-[9px] uppercase font-bold tracking-wider ${
+                            sc.type === 'attack'
+                              ? 'bg-[#FCE8E2] text-[#C94D3B]'
+                              : 'bg-[#E3F3E8] text-[#1E4D36]'
+                          }`}
+                        >
+                          {sc.type}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-[10.5px] text-[#66736A] font-normal mt-0.5 line-clamp-1">
+                      {sc.description}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-[#66736A] font-normal mt-1 leading-relaxed">
-                    {sc.description}
-                  </p>
-                  <div className="mt-1 text-[10px] text-[#859087] font-mono">
-                    Invariant Target: {sc.invariant}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
 

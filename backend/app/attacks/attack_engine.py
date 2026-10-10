@@ -86,13 +86,27 @@ class AttackEngine:
         attempts_list: List[AttemptResult] = []
         candidates: List[AttackCandidate] = []
 
+        scenario_ticket_key = {
+            "support-ticket-injection": "ticket_malicious_seed",
+            "unauthorized-data-exfiltration": "ticket_direct_exfil",
+            "unauthorized-tool-use": "ticket_privilege_escalation",
+            "multistep-tool-abuse": "ticket_multistep_abuse",
+            "retrieval-source-poisoning": "ticket_kb_inquiry",
+            "persistent-memory-poisoning": "ticket_memory_poison",
+            "policy-boundary-bypass": "ticket_obfuscation_bypass",
+            "sensitive-data-disclosure": "ticket_secret_leak",
+            "defense-regression-suite": "ticket_regression_seed",
+        }.get(scenario_id, "ticket_malicious_seed")
+
+        active_seed = INITIAL_TICKETS.get(scenario_ticket_key, self.seed_ticket)
+
         # Candidate 0: Seed
         seed_cand = AttackCandidate(
             id=f"cand_{actual_run_id[:8]}_seed",
             parent_id=None,
             generation=0,
             mutation_method="SEED",
-            ticket=self.seed_ticket,
+            ticket=active_seed,
         )
         candidates.append(seed_cand)
 

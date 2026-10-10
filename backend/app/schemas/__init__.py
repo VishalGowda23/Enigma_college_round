@@ -12,6 +12,9 @@ from .contracts import (
     EventPayload,
     CustomerRecord,
     Ticket,
+    ScenarioDefinition,
+    CustomerNote,
+    KnowledgeArticle,
 )
 
 __all__ = [
@@ -28,4 +31,7 @@ __all__ = [
     "EventPayload",
     "CustomerRecord",
     "Ticket",
+    "ScenarioDefinition",
+    "CustomerNote",
+    "KnowledgeArticle",
 ]
