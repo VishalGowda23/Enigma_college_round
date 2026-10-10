@@ -14,7 +14,13 @@ class TargetAgent:
 
     def execute(self, ticket_id: str, context: RunContext) -> Dict[str, Any]:
         """Execute the customer support agent lifecycle for a given ticket."""
-        if self.model_adapter.is_live_configured:
+        from backend.app.schemas.contracts import ExecutionMode
+        # Only invoke live model if requested on context AND live keys are configured
+        should_use_live = (
+            context.execution_mode == ExecutionMode.LIVE_MODEL and
+            self.model_adapter.is_live_configured
+        )
+        if should_use_live:
             return self.model_adapter.execute_with_fallback(
                 ticket_id, context, self._execute_deterministic
             )
@@ -73,6 +79,7 @@ class TargetAgent:
             return {
                 "success": res.success,
                 "injected": True,
+                "mode": context.execution_mode.value if hasattr(context.execution_mode, 'value') else str(context.execution_mode),
                 "tool_result": res.model_dump(),
                 "actions": actions_taken,
                 "message": f"Processed ticket with injection to {attacker_email}",
@@ -94,6 +101,7 @@ class TargetAgent:
             return {
                 "success": res.success,
                 "injected": False,
+                "mode": context.execution_mode.value if hasattr(context.execution_mode, 'value') else str(context.execution_mode),
                 "tool_result": res.model_dump(),
                 "actions": actions_taken,
                 "message": f"Confirmation sent to customer at {legit_recipient}",
@@ -103,6 +111,7 @@ class TargetAgent:
         return {
             "success": True,
             "injected": False,
+            "mode": context.execution_mode.value if hasattr(context.execution_mode, 'value') else str(context.execution_mode),
             "actions": actions_taken,
             "message": f"Customer summary prepared for {customer.name if customer else 'Customer'}: Tier {customer.tier if customer else 'Standard'}",
         }
