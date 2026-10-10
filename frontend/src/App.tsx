@@ -24,8 +24,10 @@ import { AgentsScreen } from './screens/AgentsScreen'
 import { EvidenceScreen } from './screens/EvidenceScreen'
 import { DefenseLabScreen } from './screens/DefenseLabScreen'
 import { ReportsScreen } from './screens/ReportsScreen'
+import { CrazyLoadingScreen } from './components/CrazyLoadingScreen'
 
 export function App() {
+  const [isBooting, setIsBooting] = useState<boolean>(true)
   const [currentTab, setCurrentTab] = useState<NavigationTab>('home')
   const [mode, setMode] = useState<string>('live')
   const [scenarios, setScenarios] = useState<Scenario[]>([])
@@ -377,6 +379,9 @@ export function App() {
         scenarios={scenarios}
         onRunCreated={handleRunCreated}
       />
+
+      {/* Cyberpunk Boot & Telemetry Loading Screen */}
+      {isBooting && <CrazyLoadingScreen onComplete={() => setIsBooting(false)} />}
     </div>
   )
 }
