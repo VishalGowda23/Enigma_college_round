@@ -46,3 +46,4 @@ class EventBroadcaster:
                 logger.warning(f"Subscriber queue full for run {run_id}, dropping event.")
 
 broadcaster = EventBroadcaster()
+event_broadcaster = broadcaster

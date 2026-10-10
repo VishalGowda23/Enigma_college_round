@@ -26,6 +26,7 @@ from backend.app.api.runs import router as runs_router
 
 app.include_router(runs_router)
 
+@app.get("/health")
 @app.get("/api/health")
 async def health_check():
     """Return health status and current execution mode."""
