@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Home, Zap, Users, Network, Menu } from 'lucide-react'
 import {
   fetchHealth,
   fetchScenarios,
@@ -33,8 +34,9 @@ export function App() {
   const [events, setEvents] = useState<TraceEvent[]>([])
   const [findings, setFindings] = useState<Finding[]>([])
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
-
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false)
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false)
 
   // Load initial environment data and runs list
   const loadData = useCallback(async () => {
@@ -77,9 +79,6 @@ export function App() {
       if (isMounted) {
         setEvents(evList)
         setFindings(findList)
-        if (evList.length > 0) {
-          setSelectedEventId((prev) => prev || evList[0].id)
-        }
       }
     })
 
@@ -184,27 +183,30 @@ export function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4FAF1] text-[#202A25] flex flex-row">
-      {/* 216px Navigation Sidebar */}
+    <div className="h-screen bg-[#F4FAF1] text-[#202A25] flex flex-col lg:flex-row overflow-hidden">
+      {/* Navigation Sidebar (Desktop + Mobile Drawer) */}
       <Sidebar
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
         executionMode={activeRun?.execution_mode || mode}
         provider={activeRun?.provider}
         activeRunCount={runs.length}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
       />
 
       {/* Main Workspace Frame */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <TopBar
           currentTab={currentTab}
           activeRun={activeRun}
           onOpenNewAssessment={() => setIsModalOpen(true)}
           onReplayCurrent={activeRun ? handleReplayCurrent : undefined}
           onToggleDefenseRerun={activeRun ? handleToggleDefenseRerun : undefined}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
         />
 
-        <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
+        <main className="flex-1 overflow-y-auto px-3 py-2.5 sm:px-4 sm:py-3 lg:px-5 lg:py-3 pb-20 lg:pb-3.5 max-w-7xl w-full mx-auto min-h-0">
           {currentTab === 'home' && (
             <HomeScreen
               runs={runs}
@@ -225,6 +227,8 @@ export function App() {
               onSelectEvent={setSelectedEventId}
               selectedEventId={selectedEventId}
               onOpenNewAssessment={() => setIsModalOpen(true)}
+              onReplayCurrent={activeRun ? handleReplayCurrent : undefined}
+              onNavigateToEvidence={() => setCurrentTab('evidence')}
             />
           )}
 
@@ -252,10 +256,18 @@ export function App() {
             />
           )}
 
-          {currentTab === 'agents' && <AgentsScreen />}
+          {currentTab === 'agents' && (
+            <AgentsScreen
+              activeRun={activeRun}
+              events={events}
+              onNavigate={setCurrentTab}
+              onSelectEvent={setSelectedEventId}
+            />
+          )}
 
           {currentTab === 'evidence' && (
             <EvidenceScreen
+              activeRun={activeRun}
               findings={findings}
               events={events}
               onSelectEvent={setSelectedEventId}
@@ -286,12 +298,76 @@ export function App() {
         </main>
       </div>
 
-      {/* Slide-out Forensic Event Details Drawer */}
+      {/* Mobile Bottom Navigation Bar (Visible on mobile/tablet screens only) */}
+      <nav
+        aria-label="Mobile Navigation"
+        className="lg:hidden fixed bottom-0 inset-x-0 bg-[#FFFEFA]/95 backdrop-blur-md border-t border-[#DCE7D8] z-40 flex items-center justify-around py-2 px-1 shadow-lg select-none"
+      >
+        <button
+          onClick={() => setCurrentTab('home')}
+          className={`flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors cursor-pointer ${
+            currentTab === 'home' ? 'text-[#1E4D36] bg-[#E3F3E8]' : 'text-[#66736A] hover:text-[#202A25]'
+          }`}
+        >
+          <Home className="w-4 h-4" />
+          <span>Home</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('live-lab')}
+          className={`flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors cursor-pointer relative ${
+            currentTab === 'live-lab' ? 'text-[#1E4D36] bg-[#E3F3E8]' : 'text-[#66736A] hover:text-[#202A25]'
+          }`}
+        >
+          <Zap className="w-4 h-4" />
+          <span>Live Lab</span>
+          {runs.length > 0 && (
+            <span className="w-1.5 h-1.5 rounded-full bg-[#D65C4B] absolute top-1 right-2 animate-ping" />
+          )}
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('agents')}
+          className={`flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors cursor-pointer ${
+            currentTab === 'agents' ? 'text-[#1E4D36] bg-[#E3F3E8]' : 'text-[#66736A] hover:text-[#202A25]'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Agents</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('evidence')}
+          className={`flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors cursor-pointer ${
+            currentTab === 'evidence' ? 'text-[#1E4D36] bg-[#E3F3E8]' : 'text-[#66736A] hover:text-[#202A25]'
+          }`}
+        >
+          <Network className="w-4 h-4" />
+          <span>Evidence</span>
+        </button>
+
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold text-[#66736A] hover:text-[#202A25] transition-colors cursor-pointer"
+        >
+          <Menu className="w-4 h-4" />
+          <span>More</span>
+        </button>
+      </nav>
+
+      {/* Slide-out Forensic Event Details Drawer (Never open on reload; only open when explicitly opened) */}
       <EventDetailsDrawer
+        isOpen={isDrawerOpen}
         event={selectedEvent}
-        onClose={() => setSelectedEventId(null)}
+        onClose={() => {
+          setIsDrawerOpen(false)
+          setSelectedEventId(null)
+        }}
         allEvents={events}
-        onSelectEvent={setSelectedEventId}
+        onSelectEvent={(id) => {
+          setSelectedEventId(id)
+          setIsDrawerOpen(true)
+        }}
       />
 
       {/* New Assessment Launcher Modal */}

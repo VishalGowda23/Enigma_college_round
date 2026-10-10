@@ -102,3 +102,100 @@ body {
 .animate-dash {
   animation: dash 1.5s linear infinite;
 }
+
+/* Pixel Agent Animation Keyframes */
+@keyframes pixel-bob {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes pixel-walk {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-2px) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(0) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-2px) rotate(3deg);
+  }
+}
+
+@keyframes pixel-action {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08) translateY(-1px);
+  }
+}
+
+@keyframes pixel-recoil {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px) rotate(-4deg);
+  }
+  50% {
+    transform: translateX(2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes pixel-triumph {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  40% {
+    transform: translateY(-5px) scale(1.1);
+  }
+  60% {
+    transform: translateY(-2px) scale(1.05);
+  }
+}
+
+.pixel-idle {
+  animation: pixel-bob 2.4s ease-in-out infinite;
+}
+
+.pixel-walking {
+  animation: pixel-walk 0.7s steps(4) infinite;
+}
+
+.pixel-action {
+  animation: pixel-action 1.2s ease-in-out infinite;
+}
+
+.pixel-blocked {
+  animation: pixel-recoil 0.6s ease-in-out;
+}
+
+.pixel-verified {
+  animation: pixel-triumph 1.4s ease-in-out infinite;
+}
+
+/* Accessibility: Respect system reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .pixel-idle,
+  .pixel-walking,
+  .pixel-action,
+  .pixel-blocked,
+  .pixel-verified,
+  .animate-dash,
+  .animate-soft-pulse,
+  .animate-spin,
+  .animate-pulse {
+    animation: none !important;
+    transition: none !important;
+  }
+}

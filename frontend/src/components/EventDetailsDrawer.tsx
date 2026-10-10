@@ -1,8 +1,16 @@
 import React, { useState } from 'react'
+import {
+  X,
+  Copy,
+  Check,
+  SearchCode,
+  CornerDownRight,
+} from 'lucide-react'
 import type { TraceEvent } from '../types'
 import { PixelAgent } from './pixel/PixelAgent'
 
 interface EventDetailsDrawerProps {
+  isOpen?: boolean
   event: TraceEvent | null
   onClose: () => void
   allEvents?: TraceEvent[]
@@ -10,6 +18,7 @@ interface EventDetailsDrawerProps {
 }
 
 export const EventDetailsDrawer: React.FC<EventDetailsDrawerProps> = ({
+  isOpen = false,
   event,
   onClose,
   allEvents = [],
@@ -18,7 +27,7 @@ export const EventDetailsDrawer: React.FC<EventDetailsDrawerProps> = ({
   const [activeTab, setActiveTab] = useState<'details' | 'raw'>('details')
   const [copied, setCopied] = useState(false)
 
-  if (!event) return null
+  if (!isOpen || !event) return null
 
   // Find parent event if present
   const parentEvent = event.parent_event_id
@@ -63,10 +72,11 @@ export const EventDetailsDrawer: React.FC<EventDetailsDrawerProps> = ({
 
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg text-[#66736A] hover:bg-[#DCE7D8] transition-colors text-sm"
+          className="p-1.5 rounded-lg text-[#66736A] hover:bg-[#DCE7D8] transition-colors cursor-pointer"
           title="Close drawer"
+          aria-label="Close drawer"
         >
-          ✕
+          <X className="w-4 h-4" />
         </button>
       </div>
 
@@ -74,7 +84,7 @@ export const EventDetailsDrawer: React.FC<EventDetailsDrawerProps> = ({
       <div className="flex border-b border-[#DCE7D8] bg-[#FFFEFA] px-4 pt-2">
         <button
           onClick={() => setActiveTab('details')}
-          className={`pb-2 px-3 text-xs font-semibold border-b-2 transition-all ${
+          className={`pb-2 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === 'details'
               ? 'border-[#202A25] text-[#202A25]'
               : 'border-transparent text-[#859087] hover:text-[#202A25]'
@@ -84,7 +94,7 @@ export const EventDetailsDrawer: React.FC<EventDetailsDrawerProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('raw')}
-          className={`pb-2 px-3 text-xs font-semibold border-b-2 transition-all ${
+          className={`pb-2 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === 'raw'
               ? 'border-[#202A25] text-[#202A25]'
               : 'border-transparent text-[#859087] hover:text-[#202A25]'
@@ -147,9 +157,10 @@ export const EventDetailsDrawer: React.FC<EventDetailsDrawerProps> = ({
                   {onSelectEvent && (
                     <button
                       onClick={() => onSelectEvent(parentEvent.id)}
-                      className="text-[11px] font-semibold text-[#4E8CCB] hover:underline"
+                      className="text-[11px] font-semibold text-[#4E8CCB] hover:underline flex items-center gap-1 cursor-pointer"
                     >
-                      Jump to parent →
+                      <span>Jump to parent</span>
+                      <CornerDownRight className="w-3 h-3" />
                     </button>
                   )}
                 </div>
@@ -208,7 +219,7 @@ export const EventDetailsDrawer: React.FC<EventDetailsDrawerProps> = ({
             {event.evidence_json && Object.keys(event.evidence_json).length > 0 && (
               <div className="p-3 rounded-lg bg-[#F0E8FA] border border-[#B99BDD]/40 text-xs">
                 <div className="text-[10px] uppercase font-bold text-[#9270C1] mb-1.5 flex items-center gap-1.5">
-                  <span>🔍</span>
+                  <SearchCode className="w-3.5 h-3.5 text-[#9270C1]" />
                   <span>Independent State Verification Proof</span>
                 </div>
                 <pre className="font-mono text-xs bg-white/90 p-2.5 rounded border border-[#B99BDD]/30 text-[#202A25] overflow-x-auto whitespace-pre-wrap">
@@ -222,9 +233,19 @@ export const EventDetailsDrawer: React.FC<EventDetailsDrawerProps> = ({
             <div className="flex justify-end">
               <button
                 onClick={handleCopyRaw}
-                className="px-2.5 py-1 rounded bg-[#EEF5E9] hover:bg-[#DCE7D8] text-xs font-medium text-[#202A25] border border-[#DCE7D8] transition-colors"
+                className="px-2.5 py-1 rounded bg-[#EEF5E9] hover:bg-[#DCE7D8] text-xs font-medium text-[#202A25] border border-[#DCE7D8] transition-colors flex items-center gap-1.5 cursor-pointer"
               >
-                {copied ? '✓ Copied' : 'Copy JSON'}
+                {copied ? (
+                  <>
+                    <Check className="w-3 h-3 text-[#438A68]" />
+                    <span>Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3 text-[#66736A]" />
+                    <span>Copy JSON</span>
+                  </>
+                )}
               </button>
             </div>
             <pre className="font-mono text-[11px] bg-[#F4FAF1] p-3 rounded-lg border border-[#DCE7D8] text-[#202A25] overflow-x-auto leading-relaxed">
@@ -236,10 +257,10 @@ export const EventDetailsDrawer: React.FC<EventDetailsDrawerProps> = ({
 
       {/* Drawer Footer */}
       <div className="p-3 border-t border-[#DCE7D8] bg-[#F4FAF1] flex justify-between items-center text-xs text-[#66736A]">
-        <span>Event ID: {event.id.slice(0, 12)}…</span>
+        <span className="font-mono text-[11px]">Event ID: {event.id.slice(0, 12)}…</span>
         <button
           onClick={onClose}
-          className="px-3 py-1 rounded bg-[#FFFEFA] border border-[#DCE7D8] text-[#202A25] hover:bg-[#EEF5E9] font-medium"
+          className="px-3 py-1 rounded bg-[#FFFEFA] border border-[#DCE7D8] text-[#202A25] hover:bg-[#EEF5E9] font-medium cursor-pointer"
         >
           Close
         </button>

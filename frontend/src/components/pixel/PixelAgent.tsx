@@ -1,24 +1,30 @@
 import React from 'react'
 import type { ActorRole } from '../../types'
 
-export type AgentPose = 'idle' | 'walking' | 'inspecting' | 'action' | 'blocked' | 'verified'
+export type AgentPose = 'idle' | 'walking' | 'inspecting' | 'action' | 'blocked' | 'verified' | 'error'
 
 interface PixelAgentProps {
-  role: ActorRole | 'hunter' | 'operator' | 'sentinel' | 'analyst'
+  role: ActorRole | 'hunter' | 'operator' | 'sentinel' | 'analyst' | 'system'
   size?: number
   pose?: AgentPose
+  direction?: 'left' | 'right'
   className?: string
   showBadge?: boolean
+  showActivityDot?: boolean
   label?: string
+  activityLabel?: string
 }
 
 export const PixelAgent: React.FC<PixelAgentProps> = ({
   role,
   size = 48,
   pose = 'idle',
+  direction = 'right',
   className = '',
   showBadge = false,
+  showActivityDot = false,
   label,
+  activityLabel,
 }) => {
   // SVG Pixel grid: 16x16 crisp pixels
   const renderSprite = () => {
@@ -63,6 +69,14 @@ export const PixelAgent: React.FC<PixelAgentProps> = ({
                 {/* Probe beam */}
                 <rect x="12" y="7" width="3" height="1" fill="#FFC1B6" opacity="0.8" />
               </>
+            ) : pose === 'inspecting' ? (
+              <>
+                <rect x="5" y="12" width="2" height="3" fill="#8F2A1E" />
+                <rect x="9" y="12" width="2" height="3" fill="#8F2A1E" />
+                {/* Magnifying lens in front */}
+                <rect x="11" y="4" width="2" height="2" fill="#FFD6A5" />
+                <rect x="13" y="6" width="1" height="2" fill="#8F2A1E" />
+              </>
             ) : (
               <>
                 <rect x="5" y="12" width="2" height="3" fill="#8F2A1E" />
@@ -101,6 +115,13 @@ export const PixelAgent: React.FC<PixelAgentProps> = ({
               <>
                 <rect x="5" y="12" width="2" height="2" fill="#1D436D" />
                 <rect x="9" y="12" width="2" height="3" fill="#1D436D" />
+              </>
+            ) : pose === 'action' ? (
+              <>
+                <rect x="5" y="12" width="2" height="3" fill="#1D436D" />
+                <rect x="9" y="12" width="2" height="3" fill="#1D436D" />
+                {/* Screen emit */}
+                <rect x="12" y="9" width="2" height="1" fill="#E5F0FC" opacity="0.9" />
               </>
             ) : (
               <>
@@ -197,14 +218,41 @@ export const PixelAgent: React.FC<PixelAgentProps> = ({
 
   const info = roleLabels[role] || roleLabels.system
 
+  const getPoseClass = () => {
+    switch (pose) {
+      case 'walking':
+        return 'pixel-walking'
+      case 'action':
+        return 'pixel-action'
+      case 'blocked':
+        return 'pixel-blocked'
+      case 'verified':
+        return 'pixel-verified'
+      case 'idle':
+      default:
+        return 'pixel-idle'
+    }
+  }
+
   return (
-    <div className={`inline-flex flex-col items-center gap-1 ${className}`}>
-      <div className="relative flex items-center justify-center p-1 rounded-lg transition-transform hover:scale-105">
+    <div className={`inline-flex flex-col items-center gap-1 select-none ${className}`}>
+      <div
+        className={`relative flex items-center justify-center p-1 rounded-lg transition-transform hover:scale-105 ${getPoseClass()}`}
+        style={{ transform: direction === 'left' ? 'scaleX(-1)' : undefined }}
+      >
         {renderSprite()}
+
+        {showActivityDot && (
+          <span
+            className="absolute top-0 right-0 w-2 h-2 rounded-full border-2 border-white shadow-xs animate-ping"
+            style={{ backgroundColor: info.color }}
+          />
+        )}
       </div>
+
       {showBadge && (
         <span
-          className="px-2 py-0.5 rounded-full text-[11px] font-semibold tracking-wide border shadow-2xs"
+          className="px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide border shadow-2xs whitespace-nowrap"
           style={{
             color: info.color,
             backgroundColor: info.bg,
@@ -212,6 +260,12 @@ export const PixelAgent: React.FC<PixelAgentProps> = ({
           }}
         >
           {label || info.title}
+        </span>
+      )}
+
+      {activityLabel && (
+        <span className="text-[10px] text-[#66736A] font-medium tracking-tight">
+          {activityLabel}
         </span>
       )}
     </div>

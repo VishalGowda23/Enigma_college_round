@@ -1,4 +1,5 @@
 import React from 'react'
+import { Play, Pause, SkipBack, SkipForward } from 'lucide-react'
 import type { TraceEvent } from '../types'
 import { PixelAgent } from './pixel/PixelAgent'
 
@@ -67,17 +68,19 @@ export const TraceTimeline: React.FC<TraceTimelineProps> = ({
               disabled={currentIndex <= 0}
               className="p-1 rounded hover:bg-[#EEF5E9] text-xs font-bold text-[#66736A] disabled:opacity-30 cursor-pointer"
               title="Step backward"
+              aria-label="Step backward"
             >
-              ⏮
+              <SkipBack className="w-3.5 h-3.5" />
             </button>
           )}
 
           {onTogglePlay && (
             <button
               onClick={onTogglePlay}
-              className="px-2.5 py-1 rounded bg-[#202A25] text-white text-xs font-semibold hover:bg-[#34443C] transition-colors flex items-center gap-1 cursor-pointer"
+              className="px-2.5 py-1 rounded bg-[#202A25] text-white text-xs font-semibold hover:bg-[#34443C] transition-colors flex items-center gap-1.5 cursor-pointer"
+              aria-label={isPlaying ? 'Pause playback' : 'Start playback'}
             >
-              <span>{isPlaying ? '⏸' : '▶'}</span>
+              {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
               <span>{isPlaying ? 'Pause' : 'Play'}</span>
             </button>
           )}
@@ -88,8 +91,9 @@ export const TraceTimeline: React.FC<TraceTimelineProps> = ({
               disabled={currentIndex >= events.length - 1}
               className="p-1 rounded hover:bg-[#EEF5E9] text-xs font-bold text-[#66736A] disabled:opacity-30 cursor-pointer"
               title="Step forward"
+              aria-label="Step forward"
             >
-              ⏭
+              <SkipForward className="w-3.5 h-3.5" />
             </button>
           )}
 

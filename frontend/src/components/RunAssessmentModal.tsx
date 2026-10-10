@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { X, RotateCw } from 'lucide-react'
 import type { Scenario, ExecutionMode } from '../types'
 import { createRun } from '../api/client'
 
@@ -63,8 +64,9 @@ export const RunAssessmentModal: React.FC<RunAssessmentModalProps> = ({
           <button
             onClick={onClose}
             className="p-1 rounded-lg text-[#66736A] hover:bg-[#DCE7D8] transition-colors"
+            aria-label="Close modal"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -245,7 +247,7 @@ export const RunAssessmentModal: React.FC<RunAssessmentModalProps> = ({
             disabled={isLoading}
             className="px-5 py-2 rounded-lg text-xs font-semibold text-white bg-[#202A25] hover:bg-[#34443C] transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
           >
-            {isLoading && <span className="animate-spin text-sm">↻</span>}
+            {isLoading && <RotateCw className="w-3.5 h-3.5 animate-spin" />}
             <span>{isLoading ? 'Launching…' : 'Start Assessment'}</span>
           </button>
         </div>
