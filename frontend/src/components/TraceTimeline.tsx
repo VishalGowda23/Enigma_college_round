@@ -1,140 +1,182 @@
-import { useState } from 'react'
+import React from 'react'
 import type { TraceEvent } from '../types'
+import { PixelAgent } from './pixel/PixelAgent'
 
 interface TraceTimelineProps {
   events: TraceEvent[]
-  runId: string
-  highlightedEventIds?: string[]
+  selectedEventId: string | null
+  onSelectEvent: (eventId: string) => void
+  currentIndex?: number
+  isPlaying?: boolean
+  onTogglePlay?: () => void
+  onStepForward?: () => void
+  onStepBackward?: () => void
+  speed?: number
+  onChangeSpeed?: (speed: number) => void
 }
 
-export function TraceTimeline({ events, runId, highlightedEventIds = [] }: TraceTimelineProps) {
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
-
-  if (events.length === 0) {
+export const TraceTimeline: React.FC<TraceTimelineProps> = ({
+  events,
+  selectedEventId,
+  onSelectEvent,
+  currentIndex = 0,
+  isPlaying = false,
+  onTogglePlay,
+  onStepForward,
+  onStepBackward,
+  speed = 1,
+  onChangeSpeed,
+}) => {
+  const getRelationBadge = (rel?: string | null) => {
+    if (!rel) return null
     return (
-      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 text-center text-slate-500 text-xs">
-        No trace events recorded for run {runId}.
-      </div>
+      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-[#EEF5E9] text-[#66736A] border border-[#DCE7D8]">
+        {rel}
+      </span>
     )
   }
 
-  const getEventBadge = (type: string) => {
-    switch (type) {
-      case 'TOOL_CALL_EXECUTED':
-        return 'bg-red-950/80 text-red-400 border-red-800/60'
-      case 'TOOL_CALL_BLOCKED':
-        return 'bg-emerald-950/80 text-emerald-400 border-emerald-800/60'
-      case 'ORACLE_VERDICT':
-        return 'bg-blue-950/80 text-blue-400 border-blue-800/60'
-      case 'POLICY_EVALUATED':
-        return 'bg-purple-950/80 text-purple-400 border-purple-800/60'
-      case 'UNTRUSTED_CONTENT_READ':
-        return 'bg-amber-950/80 text-amber-400 border-amber-800/60'
-      case 'TOOL_CALL_ATTEMPTED':
-        return 'bg-yellow-950/80 text-yellow-400 border-yellow-800/60'
-      default:
-        return 'bg-slate-800 text-slate-300 border-slate-700'
+  const getStatusColor = (ev: TraceEvent) => {
+    if (ev.event_type === 'TOOL_CALL_BLOCKED') return 'bg-[#FCE8E2] text-[#C94D3B] border-[#C94D3B]/30'
+    if (ev.event_type === 'ORACLE_VERDICT') {
+      const isExploit = ev.reason_code === 'EXPLOIT_CONFIRMED_SIDE_EFFECT_PRESENT'
+      return isExploit
+        ? 'bg-[#FCE8E2] text-[#C94D3B] border-[#C94D3B]/40 font-bold'
+        : 'bg-[#BDEBD6]/50 text-[#1E4D36] border-[#76A889]/40 font-bold'
     }
+    if (ev.event_type === 'TOOL_CALL_EXECUTED') return 'bg-[#E5F0FC] text-[#4E8CCB] border-[#4E8CCB]/30'
+    return 'bg-[#FFFEFA] text-[#202A25] border-[#DCE7D8]'
   }
 
   return (
-    <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-xl">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-800/80 mb-4">
+    <div className="bg-[#FFFEFA] rounded-2xl border border-[#DCE7D8] shadow-card flex flex-col h-full overflow-hidden">
+      {/* Timeline Controls Header */}
+      <div className="p-4 border-b border-[#DCE7D8] bg-[#F4FAF1] flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-white uppercase tracking-wider font-mono">
-            Chronological Event Trace
-          </h3>
-          <span className="text-xs text-slate-500 font-mono">
-            Run: {runId.slice(0, 12)}... ({events.length} ordered events)
-          </span>
+          <h3 className="font-serif text-sm font-bold text-[#202A25]">Forensic Execution Trace</h3>
+          <p className="text-[11px] text-[#66736A]">
+            {events.length} causal events recorded in chronological order
+          </p>
+        </div>
+
+        {/* Playback Controls */}
+        <div className="flex items-center gap-1.5 bg-[#FFFEFA] px-2 py-1 rounded-lg border border-[#DCE7D8] shadow-2xs">
+          {onStepBackward && (
+            <button
+              onClick={onStepBackward}
+              disabled={currentIndex <= 0}
+              className="p-1 rounded hover:bg-[#EEF5E9] text-xs font-bold text-[#66736A] disabled:opacity-30 cursor-pointer"
+              title="Step backward"
+            >
+              ⏮
+            </button>
+          )}
+
+          {onTogglePlay && (
+            <button
+              onClick={onTogglePlay}
+              className="px-2.5 py-1 rounded bg-[#202A25] text-white text-xs font-semibold hover:bg-[#34443C] transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <span>{isPlaying ? '⏸' : '▶'}</span>
+              <span>{isPlaying ? 'Pause' : 'Play'}</span>
+            </button>
+          )}
+
+          {onStepForward && (
+            <button
+              onClick={onStepForward}
+              disabled={currentIndex >= events.length - 1}
+              className="p-1 rounded hover:bg-[#EEF5E9] text-xs font-bold text-[#66736A] disabled:opacity-30 cursor-pointer"
+              title="Step forward"
+            >
+              ⏭
+            </button>
+          )}
+
+          {onChangeSpeed && (
+            <div className="flex items-center gap-1 ml-1 pl-2 border-l border-[#DCE7D8] text-[10px]">
+              {[0.5, 1, 2].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => onChangeSpeed(s)}
+                  className={`px-1.5 py-0.5 rounded font-semibold transition-colors ${
+                    speed === s ? 'bg-[#76A889] text-white' : 'text-[#66736A] hover:bg-[#EEF5E9]'
+                  }`}
+                >
+                  {s}x
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
-        {events.map((ev) => {
-          const isHighlighted = highlightedEventIds.includes(ev.id)
-          const isExpanded = selectedEventId === ev.id
+      {/* Events List */}
+      <div className="flex-1 overflow-y-auto divide-y divide-[#DCE7D8]/60 p-2">
+        {events.length === 0 ? (
+          <div className="p-8 text-center text-[#859087] text-xs">
+            No events recorded yet. Start an assessment to observe live trace.
+          </div>
+        ) : (
+          events.map((ev, idx) => {
+            const isSelected = ev.id === selectedEventId
+            const isPlayhead = idx === currentIndex
+            const actorRole = ev.actor || 'system'
 
-          return (
-            <div
-              key={ev.id}
-              onClick={() => setSelectedEventId(isExpanded ? null : ev.id)}
-              className={`p-3 rounded-lg border transition cursor-pointer text-xs font-mono ${
-                isHighlighted
-                  ? 'border-red-500 bg-red-950/20'
-                  : 'border-slate-800/80 bg-slate-950/60 hover:bg-slate-850'
-              }`}
-            >
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-500 text-[11px]">#{ev.sequence_number}</span>
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${getEventBadge(
-                      ev.event_type
-                    )}`}
-                  >
-                    {ev.event_type}
+            return (
+              <div
+                key={ev.id}
+                onClick={() => onSelectEvent(ev.id)}
+                className={`p-2.5 rounded-lg transition-all cursor-pointer flex items-center justify-between text-xs ${
+                  isSelected
+                    ? 'bg-[#EEF5E9] border border-[#76A889] shadow-2xs'
+                    : isPlayhead
+                    ? 'bg-[#F4FAF1] border-l-4 border-l-[#76A889]'
+                    : 'hover:bg-[#F4FAF1]'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  {/* Sequence Number */}
+                  <span className="font-mono text-[11px] font-semibold text-[#859087] w-6">
+                    #{ev.sequence_number}
                   </span>
-                  {ev.tool_name && (
-                    <span className="text-cyan-400 text-[11px] font-semibold">
-                      [{ev.tool_name}]
-                    </span>
-                  )}
-                </div>
-                <span className="text-slate-500 text-[10px]">
-                  {ev.timestamp.split('T')[1]?.slice(0, 8)}
-                </span>
-              </div>
 
-              <p className="text-slate-300 text-[11px] mb-1 font-sans">{ev.message || ev.source}</p>
-
-              {ev.reason_code && (
-                <div className="text-[10px] text-slate-400">
-                  <span className="text-slate-500">Reason:</span> {ev.reason_code}
-                </div>
-              )}
-
-              {/* Collapsible raw data */}
-              {isExpanded && (
-                <div className="mt-2.5 pt-2 border-t border-slate-800/80 text-[11px] space-y-1.5 bg-slate-950 p-2.5 rounded">
-                  <div className="text-slate-400">
-                    <span className="text-slate-500">Source:</span> {ev.source}
+                  {/* Actor Mini Sprite */}
+                  <div className="p-0.5 rounded bg-[#FFFEFA] border border-[#DCE7D8]">
+                    <PixelAgent role={actorRole} size={18} />
                   </div>
-                  {ev.policy_decision && (
-                    <div className="text-slate-400">
-                      <span className="text-slate-500">Policy Decision:</span>{' '}
-                      <strong
-                        className={
-                          ev.policy_decision === 'ALLOWED'
-                            ? 'text-emerald-400'
-                            : 'text-rose-400'
-                        }
-                      >
-                        {ev.policy_decision}
-                      </strong>
+
+                  {/* Event Type & Tool Info */}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-[#202A25]">{ev.event_type}</span>
+                      {ev.tool_name && (
+                        <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-[#EEF5E9] font-medium text-[#202A25]">
+                          {ev.tool_name}
+                        </span>
+                      )}
                     </div>
-                  )}
-                  {ev.arguments_json && (
-                    <div>
-                      <span className="text-slate-500 block mb-0.5">Arguments:</span>
-                      <pre className="text-slate-300 overflow-x-auto text-[10px]">
-                        {JSON.stringify(ev.arguments_json, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-                  {ev.evidence_json && (
-                    <div>
-                      <span className="text-slate-500 block mb-0.5">Evidence State:</span>
-                      <pre className="text-emerald-400 overflow-x-auto text-[10px]">
-                        {JSON.stringify(ev.evidence_json, null, 2)}
-                      </pre>
-                    </div>
-                  )}
+                    {ev.message && (
+                      <p className="text-[11px] text-[#66736A] truncate max-w-md mt-0.5">
+                        {ev.message}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          )
-        })}
+
+                {/* Right Badges */}
+                <div className="flex items-center gap-2">
+                  {getRelationBadge(ev.relation_type)}
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] border ${getStatusColor(ev)}`}
+                  >
+                    {ev.policy_decision || (ev.event_type === 'TOOL_CALL_BLOCKED' ? 'BLOCKED' : 'EVENT')}
+                  </span>
+                </div>
+              </div>
+            )
+          })
+        )}
       </div>
     </div>
   )

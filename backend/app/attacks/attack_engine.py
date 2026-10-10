@@ -7,6 +7,7 @@ from backend.app.schemas.contracts import (
     AttemptOutcome,
     Ticket,
     EventType,
+    ExecutionMode,
 )
 from backend.app.data.fixtures import INITIAL_TICKETS
 from backend.app.tools.mock_tools import MockEnvironment, MockToolAdapter
@@ -38,6 +39,9 @@ class AttackResult(BaseModel):
     exploits_confirmed: int
     blocks_recorded: int
     asr: float  # Attack Success Rate (exploits / attempts)
+    execution_mode: str = "deterministic"
+    provider: Optional[str] = None
+    model: Optional[str] = None
     attempts: List[AttemptResult]
 
 class AttackEngine:
@@ -53,6 +57,9 @@ class AttackEngine:
         defense_enabled: bool = False,
         env: Optional[MockEnvironment] = None,
         scenario_id: str = "support-ticket-injection",
+        execution_mode: ExecutionMode = ExecutionMode.DETERMINISTIC,
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
     ) -> AttackResult:
         """Execute bounded multi-attempt attack with lineage tracking."""
         actual_run_id = run_id or str(uuid.uuid4())
@@ -62,6 +69,8 @@ class AttackEngine:
         adapter = MockToolAdapter(environment, policy_engine=policy)
         agent = TargetAgent(adapter)
 
+        active_mode = execution_mode.value if hasattr(execution_mode, "value") else str(execution_mode)
+
         if self.recorder:
             self.recorder.record_run(
                 run_id=actual_run_id,
@@ -69,6 +78,9 @@ class AttackEngine:
                 defense_enabled=defense_enabled,
                 budget=budget,
                 config={"scenario_id": scenario_id, "defense_enabled": defense_enabled, "budget": budget},
+                execution_mode=active_mode,
+                provider=provider,
+                model=model,
             )
 
         attempts_list: List[AttemptResult] = []
@@ -98,6 +110,9 @@ class AttackEngine:
                 attempt_id=attempt_id,
                 defense_enabled=defense_enabled,
                 scenario_id=scenario_id,
+                execution_mode=execution_mode,
+                provider=provider,
+                model=model,
                 metadata={
                     "candidate_id": current_cand.id,
                     "mutation_method": current_cand.mutation_method,
@@ -109,16 +124,18 @@ class AttackEngine:
             environment.tickets[current_cand.ticket.id] = current_cand.ticket
 
             # Emit ATTEMPT_STARTED
-            environment.emit_event(
+            attempt_start_ev = environment.emit_event(
                 event_type=EventType.ATTEMPT_STARTED,
                 context=context,
                 source="attack_engine",
+                actor="hunter",
+                relation_type="caused_by",
                 arguments_json={
                     "candidate_id": current_cand.id,
                     "parent_id": current_cand.parent_id,
                     "mutation_method": current_cand.mutation_method,
                 },
-                message=f"Starting attempt {i+1}/{budget} with method '{current_cand.mutation_method}'",
+                message=f"Hunter starting attempt {i+1}/{budget} with method '{current_cand.mutation_method}'",
             )
 
             # Target agent processes ticket
@@ -132,6 +149,8 @@ class AttackEngine:
                 event_type=EventType.ATTEMPT_FINISHED,
                 context=context,
                 source="attack_engine",
+                actor="hunter",
+                relation_type="caused_by",
                 evidence_json={"verdict": verdict.outcome.value},
                 message=f"Attempt finished with verdict: {verdict.outcome.value}",
             )
@@ -179,6 +198,8 @@ class AttackEngine:
         blocks = sum(1 for a in attempts_list if a.outcome == AttemptOutcome.BLOCKED)
         asr = (exploits / len(attempts_list)) if attempts_list else 0.0
 
+        final_mode = context.execution_mode.value if hasattr(context.execution_mode, "value") else str(context.execution_mode)
+
         if self.recorder:
             self.recorder.complete_run(
                 run_id=actual_run_id,
@@ -190,6 +211,9 @@ class AttackEngine:
                 exploits_count=exploits,
                 blocks_count=blocks,
                 config={"scenario_id": scenario_id, "defense_enabled": defense_enabled, "budget": budget},
+                execution_mode=final_mode,
+                provider=context.provider,
+                model=context.model,
             )
 
         return AttackResult(
@@ -201,5 +225,8 @@ class AttackEngine:
             exploits_confirmed=exploits,
             blocks_recorded=blocks,
             asr=asr,
+            execution_mode=final_mode,
+            provider=context.provider,
+            model=context.model,
             attempts=attempts_list,
         )

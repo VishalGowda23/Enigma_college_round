@@ -56,9 +56,14 @@ class Orchestrator:
         defense_enabled: bool = False,
         budget: int = 1,
         run_id: Optional[str] = None,
+        execution_mode: str = "deterministic",
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Execute an assessment run for either an attack or benign scenario."""
         actual_run_id = run_id or str(uuid.uuid4())
+        from backend.app.schemas.contracts import ExecutionMode
+        mode_enum = ExecutionMode.LIVE_MODEL if execution_mode == "live_model" else ExecutionMode.DETERMINISTIC
 
         if scenario_id.startswith("benign"):
             return self._run_benign_assessment(
@@ -66,6 +71,9 @@ class Orchestrator:
                 scenario_id=scenario_id,
                 defense_enabled=defense_enabled,
                 budget=budget,
+                execution_mode=mode_enum,
+                provider=provider,
+                model=model,
             )
 
         # Attack scenario
@@ -75,6 +83,9 @@ class Orchestrator:
             budget=budget,
             defense_enabled=defense_enabled,
             scenario_id=scenario_id,
+            execution_mode=mode_enum,
+            provider=provider,
+            model=model,
         )
         return {
             "run_id": result.run_id,
@@ -86,6 +97,9 @@ class Orchestrator:
             "blocks_recorded": result.blocks_recorded,
             "asr": result.asr,
             "status": "COMPLETED",
+            "execution_mode": result.execution_mode,
+            "provider": result.provider,
+            "model": result.model,
             "attempts": [a.model_dump() for a in result.attempts],
         }
 
@@ -95,6 +109,9 @@ class Orchestrator:
         scenario_id: str,
         defense_enabled: bool,
         budget: int,
+        execution_mode: Any = "deterministic",
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Execute a benign scenario verifying system utility remains intact under defense."""
         ticket_id = "ticket_legit" if scenario_id == "benign-task-01" else "ticket_benign_summary"
@@ -104,12 +121,17 @@ class Orchestrator:
         adapter = MockToolAdapter(env, policy_engine=policy)
         agent = TargetAgent(adapter)
 
+        active_mode = execution_mode.value if hasattr(execution_mode, "value") else str(execution_mode)
+
         self.recorder.record_run(
             run_id=run_id,
             scenario_id=scenario_id,
             defense_enabled=defense_enabled,
             budget=budget,
             config={"scenario_id": scenario_id, "defense_enabled": defense_enabled, "budget": budget},
+            execution_mode=active_mode,
+            provider=provider,
+            model=model,
         )
 
         attempt_id = str(uuid.uuid4())
@@ -118,6 +140,9 @@ class Orchestrator:
             attempt_id=attempt_id,
             defense_enabled=defense_enabled,
             scenario_id=scenario_id,
+            execution_mode=execution_mode,
+            provider=provider,
+            model=model,
             metadata={"scenario_type": "benign", "ticket_id": ticket_id},
         )
 
@@ -125,6 +150,8 @@ class Orchestrator:
             event_type=EventType.ATTEMPT_STARTED,
             context=context,
             source="orchestrator.benign",
+            actor="system",
+            relation_type="caused_by",
             arguments_json={"ticket_id": ticket_id},
             message=f"Starting benign utility evaluation on ticket '{ticket_id}'",
         )
@@ -139,6 +166,8 @@ class Orchestrator:
             event_type=EventType.ATTEMPT_FINISHED,
             context=context,
             source="orchestrator.benign",
+            actor="system",
+            relation_type="caused_by",
             evidence_json={"verdict": verdict.outcome.value},
             message=f"Benign evaluation complete: {verdict.outcome.value}",
         )
@@ -163,6 +192,8 @@ class Orchestrator:
             state_mutated=len(env.mock_outbox) > 0,
         )
 
+        final_mode = context.execution_mode.value if hasattr(context.execution_mode, "value") else str(context.execution_mode)
+
         # Complete run
         self.recorder.complete_run(
             run_id=run_id,
@@ -174,6 +205,9 @@ class Orchestrator:
             exploits_count=0,
             blocks_count=0,
             config={"scenario_id": scenario_id, "defense_enabled": defense_enabled, "budget": budget},
+            execution_mode=final_mode,
+            provider=context.provider,
+            model=context.model,
         )
 
         return {
@@ -186,6 +220,9 @@ class Orchestrator:
             "blocks_recorded": 0,
             "asr": 0.0,
             "status": "COMPLETED",
+            "execution_mode": final_mode,
+            "provider": context.provider,
+            "model": context.model,
             "attempts": [{
                 "attempt_id": attempt_id,
                 "sequence_number": 1,

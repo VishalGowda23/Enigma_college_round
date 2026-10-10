@@ -73,3 +73,29 @@ def test_api_defended_run_and_findings():
     findings = findings_res.json()
     assert len(findings) == 1
     assert findings[0]["outcome"] == "BLOCKED"
+
+def test_api_event_streaming_and_stored_replay():
+    # Create a run
+    create_res = client.post("/api/runs", json={
+        "scenario_id": "support-ticket-injection",
+        "defense_enabled": False,
+        "budget": 1,
+    })
+    assert create_res.status_code == 200
+    run_id = create_res.json()["run_id"]
+
+    # 1. Test stored replay read-only endpoint
+    replay_trace = client.get(f"/api/runs/{run_id}/replay")
+    assert replay_trace.status_code == 200
+    data = replay_trace.json()
+    assert data["replay_mode"] == "stored_trace"
+    assert data["run"]["id"] == run_id
+    assert len(data["events"]) > 0
+
+    # 2. Test Server-Sent Events stream endpoint
+    stream_res = client.get(f"/api/runs/{run_id}/stream?speed_ms=0")
+    assert stream_res.status_code == 200
+    assert "text/event-stream" in stream_res.headers["content-type"]
+    text = stream_res.text
+    assert "data: " in text
+    assert "[DONE]" in text

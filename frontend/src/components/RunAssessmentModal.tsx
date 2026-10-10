@@ -1,202 +1,254 @@
-import { useState } from 'react'
-import type { Scenario } from '../types'
+import React, { useState } from 'react'
+import type { Scenario, ExecutionMode } from '../types'
+import { createRun } from '../api/client'
 
 interface RunAssessmentModalProps {
-  scenarios: Scenario[]
   isOpen: boolean
   onClose: () => void
+  scenarios: Scenario[]
   onRunCreated: (runId: string) => void
 }
 
-export function RunAssessmentModal({
-  scenarios,
+export const RunAssessmentModal: React.FC<RunAssessmentModalProps> = ({
   isOpen,
   onClose,
+  scenarios,
   onRunCreated,
-}: RunAssessmentModalProps) {
-  const [scenarioId, setScenarioId] = useState<string>(
+}) => {
+  const [selectedScenario, setSelectedScenario] = useState<string>(
     scenarios[0]?.id || 'support-ticket-injection'
   )
   const [defenseEnabled, setDefenseEnabled] = useState<boolean>(false)
-  const [budget, setBudget] = useState<number>(3)
-  const [submitting, setSubmitting] = useState<boolean>(false)
+  const [budget, setBudget] = useState<number>(1)
+  const [executionMode, setExecutionMode] = useState<ExecutionMode>('live_model')
+  const [provider, setProvider] = useState<'gemini' | 'groq'>('gemini')
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
 
   if (!isOpen) return null
 
-  const selectedScenario = scenarios.find((s) => s.id === scenarioId)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSubmitting(true)
+  const handleStart = async () => {
+    setIsLoading(true)
     setError(null)
-
     try {
-      const res = await fetch('/api/runs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scenario_id: scenarioId,
-          defense_enabled: defenseEnabled,
-          budget: selectedScenario?.type === 'benign' ? 1 : budget,
-        }),
+      const model = provider === 'gemini' ? 'gemini-3.6-flash' : 'openai/gpt-oss-120b'
+      const res = await createRun({
+        scenario_id: selectedScenario,
+        defense_enabled: defenseEnabled,
+        budget,
+        execution_mode: executionMode,
+        provider: executionMode === 'live_model' ? provider : undefined,
+        model: executionMode === 'live_model' ? model : undefined,
       })
-
-      if (!res.ok) {
-        throw new Error(`Failed to start run: ${res.statusText}`)
-      }
-
-      const data = await res.json()
-      onRunCreated(data.run_id)
+      onRunCreated(res.run_id)
       onClose()
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message)
-      } else {
-        setError('Unknown error starting assessment')
-      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to start assessment')
     } finally {
-      setSubmitting(false)
+      setIsLoading(false)
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-            <h2 className="text-lg font-bold text-white">Execute Security Assessment</h2>
+    <div className="fixed inset-0 bg-[#202A25]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+      <div className="bg-[#FFFEFA] border border-[#DCE7D8] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        {/* Modal Header */}
+        <div className="p-5 border-b border-[#DCE7D8] bg-[#F4FAF1] flex items-center justify-between">
+          <div>
+            <h2 className="font-serif text-lg font-bold text-[#202A25]">Launch Security Assessment</h2>
+            <p className="text-xs text-[#66736A]">
+              Execute controlled sandbox evaluation with real-time tracing
+            </p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white text-sm cursor-pointer"
+            className="p-1 rounded-lg text-[#66736A] hover:bg-[#DCE7D8] transition-colors"
           >
             ✕
           </button>
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 rounded-lg bg-red-950/50 border border-red-800 text-red-300 text-xs font-mono">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Scenario Select */}
-          <div>
-            <label className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
-              Target Scenario Fixture
-            </label>
-            <select
-              value={scenarioId}
-              onChange={(e) => {
-                const newId = e.target.value
-                setScenarioId(newId)
-                const sc = scenarios.find((s) => s.id === newId)
-                if (sc && sc.type === 'benign') {
-                  setDefenseEnabled(true)
-                  setBudget(1)
-                }
-              }}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-red-500"
-            >
-              {scenarios.map((sc) => (
-                <option key={sc.id} value={sc.id}>
-                  [{sc.type.toUpperCase()}] {sc.name}
-                </option>
-              ))}
-            </select>
-            {selectedScenario && (
-              <p className="mt-1.5 text-xs text-slate-400 leading-relaxed">
-                {selectedScenario.description}
-              </p>
-            )}
-          </div>
-
-          {/* Defense Toggle */}
-          <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between">
-            <div>
-              <span className="text-sm font-semibold text-white block">
-                Tool-Boundary Defense
-              </span>
-              <span className="text-xs text-slate-400">
-                Intercepts <code className="text-cyan-400">send_email</code> and enforces recipient allowlist
-              </span>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={defenseEnabled}
-                onChange={(e) => setDefenseEnabled(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-            </label>
-          </div>
-
-          {/* Budget Slider (Attack Scenarios only) */}
-          {selectedScenario?.type === 'attack' && (
-            <div>
-              <div className="flex items-center justify-between mb-1.5 text-xs font-mono text-slate-400">
-                <span>ATTEMPT BUDGET & MUTATIONS</span>
-                <span className="text-white font-bold">{budget} attempt(s)</span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="5"
-                value={budget}
-                onChange={(e) => setBudget(Number(e.target.value))}
-                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-500"
-              />
-              <div className="flex justify-between text-[10px] text-slate-500 font-mono mt-1">
-                <span>1 (Seed Only)</span>
-                <span>3 (Adaptive Mutations)</span>
-                <span>5 (Deep Exploration)</span>
-              </div>
+        {/* Modal Body */}
+        <div className="p-5 space-y-4 text-xs">
+          {error && (
+            <div className="p-3 rounded-lg bg-[#FCE8E2] border border-[#C94D3B]/30 text-[#8F2A1E]">
+              {error}
             </div>
           )}
 
-          {/* Expected Behavior Badge */}
-          <div className="p-3 rounded-lg bg-slate-950/40 border border-slate-800 text-xs font-mono text-slate-400 flex items-center justify-between">
-            <span>Expected Oracle Verdict:</span>
-            <span
-              className={`font-bold ${
-                defenseEnabled
-                  ? selectedScenario?.type === 'benign'
-                    ? 'text-cyan-400'
-                    : 'text-emerald-400'
-                  : 'text-red-400'
-              }`}
-            >
-              {defenseEnabled
-                ? selectedScenario?.type === 'benign'
-                  ? 'NO_EXPLOIT_OBSERVED'
-                  : 'BLOCKED'
-                : 'CONFIRMED_EXPLOIT'}
-            </span>
+          {/* Scenario Selection */}
+          <div>
+            <label className="block font-semibold text-[#202A25] mb-1.5 uppercase text-[10px] tracking-wider text-[#859087]">
+              Select Threat Scenario
+            </label>
+            <div className="space-y-2">
+              {scenarios.map((sc) => (
+                <div
+                  key={sc.id}
+                  onClick={() => setSelectedScenario(sc.id)}
+                  className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                    selectedScenario === sc.id
+                      ? 'bg-[#EEF5E9] border-[#76A889] shadow-2xs font-semibold'
+                      : 'bg-[#FFFEFA] border-[#DCE7D8] hover:bg-[#F4FAF1]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#202A25] font-semibold">{sc.name}</span>
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${
+                        sc.type === 'attack'
+                          ? 'bg-[#FCE8E2] text-[#C94D3B]'
+                          : 'bg-[#BDEBD6]/50 text-[#1E4D36]'
+                      }`}
+                    >
+                      {sc.type}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#66736A] font-normal mt-1 leading-relaxed">
+                    {sc.description}
+                  </p>
+                  <div className="mt-1 text-[10px] text-[#859087] font-mono">
+                    Invariant Target: {sc.invariant}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+          {/* Execution Mode (Live Model vs Deterministic) */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-[#202A25] mb-1.5 uppercase text-[10px] tracking-wider text-[#859087]">
+                Execution Engine
+              </label>
+              <div className="flex rounded-lg border border-[#DCE7D8] p-1 bg-[#F4FAF1]">
+                <button
+                  type="button"
+                  onClick={() => setExecutionMode('live_model')}
+                  className={`flex-1 py-1.5 rounded-md font-semibold text-xs transition-all ${
+                    executionMode === 'live_model'
+                      ? 'bg-[#FFFEFA] text-[#202A25] shadow-2xs'
+                      : 'text-[#66736A] hover:text-[#202A25]'
+                  }`}
+                >
+                  Live LLM
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExecutionMode('deterministic')}
+                  className={`flex-1 py-1.5 rounded-md font-semibold text-xs transition-all ${
+                    executionMode === 'deterministic'
+                      ? 'bg-[#FFFEFA] text-[#202A25] shadow-2xs'
+                      : 'text-[#66736A] hover:text-[#202A25]'
+                  }`}
+                >
+                  Deterministic
+                </button>
+              </div>
+            </div>
+
+            {/* Provider Selection (Gemini vs Groq) */}
+            {executionMode === 'live_model' ? (
+              <div>
+                <label className="block font-semibold text-[#202A25] mb-1.5 uppercase text-[10px] tracking-wider text-[#859087]">
+                  Model Provider
+                </label>
+                <div className="flex rounded-lg border border-[#DCE7D8] p-1 bg-[#F4FAF1]">
+                  <button
+                    type="button"
+                    onClick={() => setProvider('gemini')}
+                    className={`flex-1 py-1.5 rounded-md font-semibold text-xs transition-all ${
+                      provider === 'gemini'
+                        ? 'bg-[#FFFEFA] text-[#202A25] shadow-2xs'
+                        : 'text-[#66736A] hover:text-[#202A25]'
+                    }`}
+                  >
+                    Gemini 3.6
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProvider('groq')}
+                    className={`flex-1 py-1.5 rounded-md font-semibold text-xs transition-all ${
+                      provider === 'groq'
+                        ? 'bg-[#FFFEFA] text-[#202A25] shadow-2xs'
+                        : 'text-[#66736A] hover:text-[#202A25]'
+                    }`}
+                  >
+                    Groq 120B
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="block font-semibold text-[#202A25] mb-1.5 uppercase text-[10px] tracking-wider text-[#859087]">
+                  Simulation Fidelity
+                </label>
+                <div className="py-2 text-[11px] text-[#66736A]">
+                  Zero-latency repeatable test traces.
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Defense Policy Toggle */}
+          <div className="p-3 rounded-xl border border-[#DCE7D8] bg-[#F4FAF1] flex items-center justify-between">
+            <div>
+              <div className="font-semibold text-[#202A25]">Sentinel Policy Defense</div>
+              <div className="text-[11px] text-[#66736A]">
+                Enforce invariant INV-001 (block unauthorized external data exfiltration)
+              </div>
+            </div>
             <button
               type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium cursor-pointer"
+              onClick={() => setDefenseEnabled(!defenseEnabled)}
+              className={`w-12 h-6 rounded-full transition-colors relative p-0.5 ${
+                defenseEnabled ? 'bg-[#438A68]' : 'bg-[#C5D5C0]'
+              }`}
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-5 py-2 rounded-lg bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-semibold shadow-md shadow-red-900/30 transition cursor-pointer disabled:opacity-50"
-            >
-              {submitting ? 'Executing Assessment...' : 'Start Assessment'}
+              <div
+                className={`w-5 h-5 rounded-full bg-white transition-transform ${
+                  defenseEnabled ? 'translate-x-6' : 'translate-x-0'
+                }`}
+              />
             </button>
           </div>
-        </form>
+
+          {/* Budget Slider */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="font-semibold text-[10px] uppercase tracking-wider text-[#859087]">
+                Adaptive Attack Budget
+              </label>
+              <span className="font-mono font-bold text-xs text-[#202A25]">{budget} Attempt(s)</span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max="5"
+              value={budget}
+              onChange={(e) => setBudget(Number(e.target.value))}
+              className="w-full accent-[#202A25] cursor-pointer"
+            />
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="p-4 border-t border-[#DCE7D8] bg-[#F4FAF1] flex justify-end gap-2.5">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg text-xs font-medium text-[#66736A] hover:bg-[#DCE7D8] transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleStart}
+            disabled={isLoading}
+            className="px-5 py-2 rounded-lg text-xs font-semibold text-white bg-[#202A25] hover:bg-[#34443C] transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+          >
+            {isLoading && <span className="animate-spin text-sm">↻</span>}
+            <span>{isLoading ? 'Launching…' : 'Start Assessment'}</span>
+          </button>
+        </div>
       </div>
     </div>
   )
