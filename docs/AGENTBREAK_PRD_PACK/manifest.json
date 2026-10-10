@@ -1,0 +1,27 @@
+{
+  "project": "AgentBreak PRD Pack",
+  "version": "1.0",
+  "master_document": "PRD.md",
+  "supporting_documents": [
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/00-product-brief.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/01-functional-requirements.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/02-user-journeys-and-workflows.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/03-scope-and-priorities.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/04-threat-model-and-safety.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/05-system-architecture.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/06-technology-stack.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/07-data-model-and-event-schema.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/08-api-contract.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/09-ui-ux-specification.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/10-attack-defense-and-demo-scenarios.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/11-metrics-and-evaluation.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/12-implementation-plan.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/13-team-workflow.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/14-test-and-quality-plan.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/15-demo-script-and-presentation.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/16-acceptance-criteria.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/17-risks-assumptions-and-decisions.md",
+    "/mnt/data/AGENTBREAK_PRD_PACK/docs/18-glossary-and-terms.md"
+  ],
+  "note": "Proposed implementation specification; does not represent completed functionality."
+}
