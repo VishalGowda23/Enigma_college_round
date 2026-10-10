@@ -14,7 +14,17 @@ class TraceRecorder:
     def __init__(self, storage: Optional[StorageRepository] = None):
         self.storage = storage or StorageRepository()
 
-    def record_run(self, run_id: str, scenario_id: str, defense_enabled: bool, budget: int, config: Optional[Dict[str, Any]] = None):
+    def record_run(
+        self,
+        run_id: str,
+        scenario_id: str,
+        defense_enabled: bool,
+        budget: int,
+        config: Optional[Dict[str, Any]] = None,
+        execution_mode: str = "deterministic",
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
+    ):
         self.storage.insert_run({
             "id": run_id,
             "scenario_id": scenario_id,
@@ -26,9 +36,26 @@ class TraceRecorder:
             "exploits_count": 0,
             "blocks_count": 0,
             "config": config or {},
+            "execution_mode": execution_mode,
+            "provider": provider,
+            "model": model,
         })
 
-    def complete_run(self, run_id: str, scenario_id: str, defense_enabled: bool, budget: int, asr: float, attempts_count: int, exploits_count: int, blocks_count: int, config: Optional[Dict[str, Any]] = None):
+    def complete_run(
+        self,
+        run_id: str,
+        scenario_id: str,
+        defense_enabled: bool,
+        budget: int,
+        asr: float,
+        attempts_count: int,
+        exploits_count: int,
+        blocks_count: int,
+        config: Optional[Dict[str, Any]] = None,
+        execution_mode: str = "deterministic",
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
+    ):
         self.storage.insert_run({
             "id": run_id,
             "scenario_id": scenario_id,
@@ -40,6 +67,9 @@ class TraceRecorder:
             "exploits_count": exploits_count,
             "blocks_count": blocks_count,
             "config": config or {},
+            "execution_mode": execution_mode,
+            "provider": provider,
+            "model": model,
         })
 
     def record_attempt(
@@ -72,6 +102,8 @@ class TraceRecorder:
 
     def record_event(self, event: EventPayload):
         self.storage.insert_event(event)
+        from backend.app.trace.broadcaster import broadcaster
+        broadcaster.broadcast(event.run_id, event.model_dump())
 
     def record_verdict_finding(self, run_id: str, verdict: OracleVerdict):
         """Create finding row linked to evidence event IDs."""

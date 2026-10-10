@@ -1,5 +1,8 @@
 from .contracts import (
     AttemptOutcome,
+    ExecutionMode,
+    ActorRole,
+    RelationType,
     EventType,
     PolicyDecision,
     ReasonCode,
@@ -13,6 +16,9 @@ from .contracts import (
 
 __all__ = [
     "AttemptOutcome",
+    "ExecutionMode",
+    "ActorRole",
+    "RelationType",
     "EventType",
     "PolicyDecision",
     "ReasonCode",

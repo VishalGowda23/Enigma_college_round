@@ -13,8 +13,38 @@ def get_connection(db_path: str = DEFAULT_DB_PATH) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     return conn
 
+def _run_migrations(conn: sqlite3.Connection):
+    """Safely apply schema migrations to existing databases without data loss."""
+    cursor = conn.cursor()
+    
+    # Check runs table columns
+    cursor.execute("PRAGMA table_info(runs);")
+    existing_run_cols = {row["name"] for row in cursor.fetchall()}
+    
+    if "config_json" not in existing_run_cols:
+        cursor.execute("ALTER TABLE runs ADD COLUMN config_json TEXT;")
+    if "execution_mode" not in existing_run_cols:
+        cursor.execute("ALTER TABLE runs ADD COLUMN execution_mode TEXT NOT NULL DEFAULT 'deterministic';")
+    if "provider" not in existing_run_cols:
+        cursor.execute("ALTER TABLE runs ADD COLUMN provider TEXT;")
+    if "model" not in existing_run_cols:
+        cursor.execute("ALTER TABLE runs ADD COLUMN model TEXT;")
+        
+    # Check events table columns
+    cursor.execute("PRAGMA table_info(events);")
+    existing_event_cols = {row["name"] for row in cursor.fetchall()}
+    
+    if "parent_event_id" not in existing_event_cols:
+        cursor.execute("ALTER TABLE events ADD COLUMN parent_event_id TEXT;")
+    if "actor" not in existing_event_cols:
+        cursor.execute("ALTER TABLE events ADD COLUMN actor TEXT;")
+    if "relation_type" not in existing_event_cols:
+        cursor.execute("ALTER TABLE events ADD COLUMN relation_type TEXT;")
+    if "execution_mode" not in existing_event_cols:
+        cursor.execute("ALTER TABLE events ADD COLUMN execution_mode TEXT NOT NULL DEFAULT 'deterministic';")
+
 def init_db(db_path: str = DEFAULT_DB_PATH):
-    """Initialize SQLite tables for runs, attempts, events, and findings."""
+    """Initialize SQLite tables for runs, attempts, events, and findings with automatic migrations."""
     with get_connection(db_path) as conn:
         cursor = conn.cursor()
         
@@ -31,6 +61,9 @@ def init_db(db_path: str = DEFAULT_DB_PATH):
                 exploits_count INTEGER NOT NULL DEFAULT 0,
                 blocks_count INTEGER NOT NULL DEFAULT 0,
                 config_json TEXT,
+                execution_mode TEXT NOT NULL DEFAULT 'deterministic',
+                provider TEXT,
+                model TEXT,
                 created_at TEXT NOT NULL
             );
         """)
@@ -60,10 +93,14 @@ def init_db(db_path: str = DEFAULT_DB_PATH):
                 id TEXT PRIMARY KEY,
                 run_id TEXT NOT NULL,
                 attempt_id TEXT NOT NULL,
+                parent_event_id TEXT,
                 sequence_number INTEGER NOT NULL,
                 timestamp TEXT NOT NULL,
                 event_type TEXT NOT NULL,
+                actor TEXT,
                 source TEXT NOT NULL,
+                relation_type TEXT,
+                execution_mode TEXT NOT NULL DEFAULT 'deterministic',
                 tool_name TEXT,
                 arguments_json TEXT,
                 policy_decision TEXT,
@@ -93,6 +130,8 @@ def init_db(db_path: str = DEFAULT_DB_PATH):
         """)
 
         conn.commit()
+        _run_migrations(conn)
+        conn.commit()
 
 class StorageRepository:
     def __init__(self, db_path: str = DEFAULT_DB_PATH):
@@ -105,8 +144,8 @@ class StorageRepository:
                 INSERT OR REPLACE INTO runs (
                     id, scenario_id, defense_enabled, budget, status,
                     asr, attempts_count, exploits_count, blocks_count,
-                    config_json, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    config_json, execution_mode, provider, model, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 run_data["id"],
                 run_data["scenario_id"],
@@ -118,6 +157,9 @@ class StorageRepository:
                 run_data.get("exploits_count", 0),
                 run_data.get("blocks_count", 0),
                 json.dumps(run_data.get("config", {})),
+                run_data.get("execution_mode", "deterministic"),
+                run_data.get("provider"),
+                run_data.get("model"),
                 run_data.get("created_at", datetime.now(timezone.utc).isoformat()),
             ))
             conn.commit()
@@ -150,18 +192,22 @@ class StorageRepository:
         with get_connection(self.db_path) as conn:
             conn.execute("""
                 INSERT OR REPLACE INTO events (
-                    id, run_id, attempt_id, sequence_number, timestamp,
-                    event_type, source, tool_name, arguments_json,
-                    policy_decision, reason_code, evidence_json, message
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    id, run_id, attempt_id, parent_event_id, sequence_number, timestamp,
+                    event_type, actor, source, relation_type, execution_mode,
+                    tool_name, arguments_json, policy_decision, reason_code, evidence_json, message
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 event.id,
                 event.run_id,
                 event.attempt_id,
+                event.parent_event_id,
                 event.sequence_number,
                 event.timestamp,
-                event.event_type.value,
+                event.event_type.value if hasattr(event.event_type, "value") else str(event.event_type),
+                event.actor,
                 event.source,
+                event.relation_type,
+                event.execution_mode.value if hasattr(event.execution_mode, "value") else str(event.execution_mode),
                 event.tool_name,
                 json.dumps(event.arguments_json) if event.arguments_json else None,
                 event.policy_decision,
@@ -202,6 +248,9 @@ class StorageRepository:
             res = dict(row)
             res["defense_enabled"] = bool(res["defense_enabled"])
             res["config"] = json.loads(res["config_json"]) if res.get("config_json") else {}
+            res["execution_mode"] = res.get("execution_mode") or "deterministic"
+            res["provider"] = res.get("provider")
+            res["model"] = res.get("model")
             return res
 
     def list_runs(self) -> List[Dict[str, Any]]:
@@ -212,6 +261,9 @@ class StorageRepository:
                 d = dict(r)
                 d["defense_enabled"] = bool(d["defense_enabled"])
                 d["config"] = json.loads(d["config_json"]) if d.get("config_json") else {}
+                d["execution_mode"] = d.get("execution_mode") or "deterministic"
+                d["provider"] = d.get("provider")
+                d["model"] = d.get("model")
                 result.append(d)
             return result
 
@@ -226,6 +278,7 @@ class StorageRepository:
                 d = dict(r)
                 d["arguments_json"] = json.loads(d["arguments_json"]) if d.get("arguments_json") else {}
                 d["evidence_json"] = json.loads(d["evidence_json"]) if d.get("evidence_json") else {}
+                d["execution_mode"] = d.get("execution_mode") or "deterministic"
                 events.append(d)
             return events
 

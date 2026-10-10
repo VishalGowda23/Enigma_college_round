@@ -42,13 +42,21 @@ class MockEnvironment:
         reason_code: Optional[str] = None,
         evidence_json: Optional[Dict[str, Any]] = None,
         message: Optional[str] = None,
+        parent_event_id: Optional[str] = None,
+        actor: Optional[str] = None,
+        relation_type: Optional[str] = None,
     ) -> EventPayload:
+        actual_parent = parent_event_id if parent_event_id is not None else context.last_event_id
         payload = EventPayload(
             run_id=context.run_id,
             attempt_id=context.attempt_id,
+            parent_event_id=actual_parent,
             sequence_number=self._seq,
             event_type=event_type,
+            actor=actor,
             source=source,
+            relation_type=relation_type,
+            execution_mode=context.execution_mode,
             tool_name=tool_name,
             arguments_json=arguments_json,
             policy_decision=policy_decision,
@@ -58,6 +66,7 @@ class MockEnvironment:
         )
         self._seq += 1
         self.events.append(payload)
+        context.last_event_id = payload.id
         return payload
 
 class MockToolAdapter:
@@ -74,14 +83,28 @@ class MockToolAdapter:
                 context=context,
                 source="mock_tools.read_ticket",
                 tool_name="read_ticket",
+                actor="operator",
+                relation_type="read_from",
                 arguments_json={"ticket_id": ticket_id},
                 evidence_json={"is_malicious": ticket.is_malicious, "subject": ticket.subject},
-                message=f"Agent read ticket '{ticket_id}' with subject: '{ticket.subject}'",
+                message=f"Operator read ticket '{ticket_id}' with subject: '{ticket.subject}'",
             )
         return ticket
 
     def lookup_customer(self, customer_id: str, context: RunContext) -> Optional[CustomerRecord]:
         """Look up internal customer record containing billing info and account secrets."""
+        # 1. Emit TOOL_CALL_ATTEMPTED
+        attempt_ev = self.env.emit_event(
+            event_type=EventType.TOOL_CALL_ATTEMPTED,
+            context=context,
+            source="target_agent",
+            tool_name="lookup_customer",
+            actor="operator",
+            relation_type="requested_tool",
+            arguments_json={"customer_id": customer_id},
+            message=f"Operator requested lookup_customer for '{customer_id}'",
+        )
+
         cust = self.env.customers.get(customer_id)
         if cust:
             self.env.emit_event(
@@ -89,6 +112,9 @@ class MockToolAdapter:
                 context=context,
                 source="mock_tools.lookup_customer",
                 tool_name="lookup_customer",
+                actor="system",
+                parent_event_id=attempt_ev.id,
+                relation_type="executed_as",
                 arguments_json={"customer_id": customer_id},
                 evidence_json={"customer_id": cust.id, "tier": cust.tier},
                 message=f"Lookup customer '{customer_id}' succeeded",
@@ -98,13 +124,15 @@ class MockToolAdapter:
     def send_email(self, recipient: str, content: str, context: RunContext) -> ToolResult:
         """Attempt to send an email. Intercepted by PolicyEngine before mutating mock_outbox."""
         # 1. Emit TOOL_CALL_ATTEMPTED
-        self.env.emit_event(
+        attempt_ev = self.env.emit_event(
             event_type=EventType.TOOL_CALL_ATTEMPTED,
             context=context,
             source="target_agent",
             tool_name="send_email",
+            actor="operator",
+            relation_type="requested_tool",
             arguments_json={"recipient": recipient, "content": content},
-            message=f"Agent requested send_email to recipient '{recipient}'",
+            message=f"Operator requested send_email to recipient '{recipient}'",
         )
 
         # 2. Evaluate Policy
@@ -115,11 +143,14 @@ class MockToolAdapter:
         )
 
         # 3. Emit POLICY_EVALUATED
-        self.env.emit_event(
+        eval_ev = self.env.emit_event(
             event_type=EventType.POLICY_EVALUATED,
             context=context,
             source="policy_engine",
             tool_name="send_email",
+            actor="sentinel",
+            parent_event_id=attempt_ev.id,
+            relation_type="evaluated_by",
             arguments_json={"recipient": recipient},
             policy_decision=policy_result.decision.value,
             reason_code=policy_result.reason_code.value,
@@ -128,11 +159,14 @@ class MockToolAdapter:
 
         # 4. If DENIED -> Emit TOOL_CALL_BLOCKED, return Error without mutating outbox
         if not policy_result.is_allowed:
-            self.env.emit_event(
+            block_ev = self.env.emit_event(
                 event_type=EventType.TOOL_CALL_BLOCKED,
                 context=context,
                 source="policy_engine",
                 tool_name="send_email",
+                actor="sentinel",
+                parent_event_id=eval_ev.id,
+                relation_type="blocked_by",
                 arguments_json={"recipient": recipient},
                 policy_decision=PolicyDecision.DENIED.value,
                 reason_code=policy_result.reason_code.value,
@@ -145,6 +179,9 @@ class MockToolAdapter:
                 error=policy_result.message,
                 blocked=True,
                 reason_code=policy_result.reason_code.value,
+                tool_name="send_email",
+                arguments={"recipient": recipient, "content": content},
+                state_delta={"state_mutated": False},
             )
 
         # 5. If ALLOWED -> Mutate Mock State, Emit TOOL_CALL_EXECUTED
@@ -161,6 +198,9 @@ class MockToolAdapter:
             context=context,
             source="mock_tools.send_email",
             tool_name="send_email",
+            actor="system",
+            parent_event_id=eval_ev.id,
+            relation_type="executed_as",
             arguments_json={"recipient": recipient},
             policy_decision=PolicyDecision.ALLOWED.value,
             reason_code=policy_result.reason_code.value,
@@ -173,4 +213,7 @@ class MockToolAdapter:
             output=f"Email sent successfully to {recipient}",
             blocked=False,
             reason_code=policy_result.reason_code.value,
+            tool_name="send_email",
+            arguments={"recipient": recipient, "content": content},
+            state_delta={"outbox_id": email.id, "state_mutated": True},
         )
