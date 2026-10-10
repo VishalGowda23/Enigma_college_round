@@ -1,3 +1,4 @@
+import React from 'react'
 import type { RunRecord } from '../types'
 
 interface ComparisonViewProps {
@@ -8,37 +9,45 @@ interface ComparisonViewProps {
   onSelectRunB: (id: string) => void
 }
 
-export function ComparisonView({
+export const ComparisonView: React.FC<ComparisonViewProps> = ({
   runs,
   runAId,
   runBId,
   onSelectRunA,
   onSelectRunB,
-}: ComparisonViewProps) {
+}) => {
   const runA = runs.find((r) => r.id === runAId)
   const runB = runs.find((r) => r.id === runBId)
 
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 shadow-xl">
-        <h2 className="text-base font-bold text-white uppercase tracking-wider font-mono mb-2">
-          A/B Regression & Defense Effectiveness Comparison
-        </h2>
-        <p className="text-xs text-slate-400 max-w-3xl leading-relaxed">
-          Compare security outcomes between a Baseline run (Defense: OFF) and a Defended run (Defense: ON)
-          using identical attack payloads to evaluate defense effectiveness and benign utility preservation.
-        </p>
+      {/* Selector Container */}
+      <div className="bg-[#FFFEFA] border border-[#DCE7D8] rounded-2xl p-6 shadow-card">
+        <div className="flex items-center justify-between gap-4 mb-2">
+          <div>
+            <h3 className="font-serif text-base font-bold text-[#202A25]">
+              A/B Regression & Defense Effectiveness Comparison
+            </h3>
+            <p className="text-xs text-[#66736A]">
+              Compare security outcomes between a Baseline run (Defense: OFF) and a Defended run (Defense: ON)
+              using identical attack fixtures to verify invariant enforcement and quantify delta metrics.
+            </p>
+          </div>
+          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded bg-[#EEF5E9] text-[#202A25] border border-[#DCE7D8]">
+            Derived from SQLite Ground-Truth
+          </span>
+        </div>
 
         {/* Slot Selectors */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
-            <label className="block text-xs font-mono uppercase text-red-400 font-semibold mb-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div className="p-4 rounded-xl bg-[#F4FAF1] border border-[#DCE7D8]">
+            <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C94D3B] mb-1.5">
               Slot A: Baseline Run (Defense OFF)
             </label>
             <select
               value={runAId || ''}
               onChange={(e) => onSelectRunA(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none"
+              className="w-full bg-[#FFFEFA] border border-[#DCE7D8] rounded-lg px-3 py-2 text-xs text-[#202A25] focus:outline-none focus:border-[#76A889]"
             >
               <option value="">Select a baseline run...</option>
               {runs.map((r) => (
@@ -50,14 +59,14 @@ export function ComparisonView({
             </select>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
-            <label className="block text-xs font-mono uppercase text-emerald-400 font-semibold mb-2">
+          <div className="p-4 rounded-xl bg-[#F4FAF1] border border-[#DCE7D8]">
+            <label className="block text-[11px] uppercase tracking-wider font-bold text-[#1E4D36] mb-1.5">
               Slot B: Defended Run (Defense ON)
             </label>
             <select
               value={runBId || ''}
               onChange={(e) => onSelectRunB(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none"
+              className="w-full bg-[#FFFEFA] border border-[#DCE7D8] rounded-lg px-3 py-2 text-xs text-[#202A25] focus:outline-none focus:border-[#76A889]"
             >
               <option value="">Select a defended run...</option>
               {runs.map((r) => (
@@ -75,38 +84,38 @@ export function ComparisonView({
       {runA && runB ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Card A: Run A Details */}
-          <div className="bg-slate-900/80 border border-red-900/50 rounded-xl p-5 shadow-xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-              <span className="text-xs font-mono font-bold text-red-400 uppercase">
+          <div className="bg-[#FFFEFA] border border-[#C94D3B]/30 rounded-2xl p-5 shadow-card space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#DCE7D8]">
+              <span className="text-xs font-bold text-[#C94D3B] uppercase tracking-wider">
                 Baseline (Slot A)
               </span>
-              <span className="text-[10px] font-mono text-slate-500">
+              <span className="font-mono text-[10px] text-[#859087]">
                 {runA.id.slice(0, 8)}...
               </span>
             </div>
 
-            <div className="space-y-3 font-mono text-xs">
+            <div className="space-y-3 text-xs">
               <div className="flex justify-between">
-                <span className="text-slate-400">Defense State:</span>
-                <span className="text-rose-400 font-bold">
+                <span className="text-[#66736A]">Defense State:</span>
+                <span className="font-semibold text-[#C94D3B]">
                   {runA.defense_enabled ? 'ENABLED' : 'DISABLED'}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Total Attempts:</span>
-                <span className="text-white">{runA.attempts_count}</span>
+                <span className="text-[#66736A]">Total Attempts:</span>
+                <span className="font-mono font-bold text-[#202A25]">{runA.attempts_count}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Exploits Confirmed:</span>
-                <span className="text-red-400 font-bold">{runA.exploits_count}</span>
+                <span className="text-[#66736A]">Exploits Confirmed:</span>
+                <span className="font-mono font-bold text-[#C94D3B]">{runA.exploits_count}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Policy Blocks:</span>
-                <span className="text-slate-400">{runA.blocks_count}</span>
+                <span className="text-[#66736A]">Policy Blocks:</span>
+                <span className="font-mono font-bold text-[#859087]">{runA.blocks_count}</span>
               </div>
-              <div className="pt-2 border-t border-slate-800 flex justify-between items-baseline">
-                <span className="text-slate-400">Attack Success Rate:</span>
-                <span className="text-2xl font-bold text-red-400">
+              <div className="pt-2 border-t border-[#DCE7D8] flex justify-between items-baseline">
+                <span className="text-[#66736A]">Attack Success Rate:</span>
+                <span className="font-serif text-2xl font-bold text-[#C94D3B]">
                   {Math.round(runA.asr * 100)}%
                 </span>
               </div>
@@ -114,79 +123,83 @@ export function ComparisonView({
           </div>
 
           {/* Card Delta: Comparison Analysis */}
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col justify-between">
-            <div className="pb-3 border-b border-slate-800 mb-4 text-center">
-              <span className="text-xs font-mono font-bold text-cyan-400 uppercase">
+          <div className="bg-[#FFFEFA] border border-[#76A889]/40 rounded-2xl p-5 shadow-card flex flex-col justify-between">
+            <div className="pb-3 border-b border-[#DCE7D8] text-center">
+              <span className="text-xs font-bold text-[#1E4D36] uppercase tracking-wider">
                 Regression Deltas (B vs A)
               </span>
             </div>
 
-            <div className="space-y-4 text-center font-mono">
+            <div className="space-y-4 text-center py-2">
               <div>
-                <span className="text-[11px] text-slate-400 block mb-1">ASR REDUCTION</span>
-                <span className="text-3xl font-extrabold text-emerald-400">
+                <span className="text-[10px] uppercase font-bold text-[#859087] block mb-0.5">
+                  ASR Reduction
+                </span>
+                <span className="font-serif text-3xl font-extrabold text-[#438A68]">
                   {Math.round((runB.asr - runA.asr) * 100)}%
                 </span>
               </div>
 
               <div>
-                <span className="text-[11px] text-slate-400 block mb-1">POLICY INTERCEPTION DELTA</span>
-                <span className="text-2xl font-bold text-cyan-400">
-                  +{runB.blocks_count - runA.blocks_count} Blocks
+                <span className="text-[10px] uppercase font-bold text-[#859087] block mb-0.5">
+                  Policy Interception Delta
+                </span>
+                <span className="font-mono text-xl font-bold text-[#4E8CCB]">
+                  +{runB.blocks_count - runA.blocks_count} Interceptions
                 </span>
               </div>
 
-              <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-300">
+              <div className="p-3 rounded-xl bg-[#F4FAF1] border border-[#DCE7D8] text-[11px]">
                 {runB.exploits_count === 0 ? (
-                  <span className="text-emerald-400 font-semibold">
+                  <span className="text-[#1E4D36] font-semibold">
                     ✓ All unauthorized exfiltration blocked at tool boundary.
                   </span>
                 ) : (
-                  <span className="text-amber-400 font-semibold">
+                  <span className="text-[#C94D3B] font-semibold">
                     ⚠ Exploits still observed under current defense.
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-800 text-[10px] text-center text-slate-500 font-mono">
-              Zero fake results • Derived strictly from SQLite records
+            <div className="pt-3 border-t border-[#DCE7D8] text-[10px] text-center text-[#859087]">
+              Zero synthetic hallucinations • Verified via SQLite state
             </div>
           </div>
 
           {/* Card B: Run B Details */}
-          <div className="bg-slate-900/80 border border-emerald-900/50 rounded-xl p-5 shadow-xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-              <span className="text-xs font-mono font-bold text-emerald-400 uppercase">
+          <div className="bg-[#FFFEFA] border border-[#76A889]/60 rounded-2xl p-5 shadow-card space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#DCE7D8]">
+              <span className="text-xs font-bold text-[#1E4D36] uppercase tracking-wider">
                 Defended (Slot B)
               </span>
-              <span className="text-[10px] font-mono text-slate-500">
+              <span className="font-mono text-[10px] text-[#859087]">
                 {runB.id.slice(0, 8)}...
               </span>
             </div>
 
-            <div className="space-y-3 font-mono text-xs">
+            <div className="space-y-3 text-xs">
               <div className="flex justify-between">
-                <span className="text-slate-400">Defense State:</span>
-                <span className="text-emerald-400 font-bold">
+                <span className="text-[#66736A]">Defense State:</span>
+                <span className="font-semibold text-[#1E4D36]">
                   {runB.defense_enabled ? 'ENABLED' : 'DISABLED'}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Total Attempts:</span>
-                <span className="text-white">{runB.attempts_count}</span>
+                <span className="text-[#66736A]">Total Attempts:</span>
+                <span className="font-mono font-bold text-[#202A25]">{runB.attempts_count}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Exploits Confirmed:</span>
-                <span className="text-slate-400">{runB.exploits_count}</span>
+                <span className="text-[#66736A]">Exploits Confirmed:</span>
+                <span className="font-mono font-bold text-[#438A68]">{runB.exploits_count}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Policy Blocks:</span>
-                <span className="text-emerald-400 font-bold">{runB.blocks_count}</span>
+                <span className="text-[#66736A]">Policy Blocks:</span>
+                <span className="font-mono font-bold text-[#1E4D36]">{runB.blocks_count}</span>
               </div>
-              <div className="pt-2 border-t border-slate-800 flex justify-between items-baseline">
-                <span className="text-slate-400">Attack Success Rate:</span>
-                <span className="text-2xl font-bold text-emerald-400">
+              <div className="pt-2 border-t border-[#DCE7D8] flex justify-between items-baseline">
+                <span className="text-[#66736A]">Attack Success Rate:</span>
+                <span className="font-serif text-2xl font-bold text-[#438A68]">
                   {Math.round(runB.asr * 100)}%
                 </span>
               </div>
@@ -194,8 +207,8 @@ export function ComparisonView({
           </div>
         </div>
       ) : (
-        <div className="p-8 text-center text-slate-500 text-xs bg-slate-900/40 border border-slate-800 rounded-xl font-mono">
-          Select both a Baseline run and a Defended run to generate the side-by-side regression delta.
+        <div className="p-8 text-center text-[#859087] text-xs bg-[#FFFEFA] border border-[#DCE7D8] rounded-2xl">
+          Select both a Baseline run and a Defended run to calculate the side-by-side regression delta.
         </div>
       )}
     </div>

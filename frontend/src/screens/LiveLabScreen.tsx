@@ -24,12 +24,7 @@ export const LiveLabScreen: React.FC<LiveLabScreenProps> = ({
   const [isPlaying, setIsPlaying] = useState<boolean>(false)
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1)
 
-  // Keep playhead within bounds when events change
-  useEffect(() => {
-    if (events.length > 0 && playheadIndex >= events.length) {
-      setPlayheadIndex(events.length - 1)
-    }
-  }, [events.length, playheadIndex])
+  const safePlayheadIndex = events.length > 0 ? Math.min(playheadIndex, events.length - 1) : 0
 
   // Playhead auto-advance timer
   useEffect(() => {
@@ -52,7 +47,7 @@ export const LiveLabScreen: React.FC<LiveLabScreenProps> = ({
     return () => clearInterval(timer)
   }, [isPlaying, events, playbackSpeed, onSelectEvent])
 
-  const currentEvent = events[playheadIndex] || events[events.length - 1] || null
+  const currentEvent = events[safePlayheadIndex] || null
 
   const handleStepForward = () => {
     if (playheadIndex < events.length - 1) {
@@ -183,7 +178,7 @@ export const LiveLabScreen: React.FC<LiveLabScreenProps> = ({
             const idx = events.findIndex((e) => e.id === id)
             if (idx !== -1) setPlayheadIndex(idx)
           }}
-          currentIndex={playheadIndex}
+          currentIndex={safePlayheadIndex}
           isPlaying={isPlaying}
           onTogglePlay={handleTogglePlay}
           onStepForward={handleStepForward}

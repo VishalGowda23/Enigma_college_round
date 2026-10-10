@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { RunRecord } from '../types'
+import { ComparisonView } from '../components/ComparisonView'
 
 interface DefenseLabScreenProps {
   runs: RunRecord[]
@@ -24,6 +25,9 @@ export const DefenseLabScreen: React.FC<DefenseLabScreenProps> = ({
     (r) => r.defense_enabled && !r.scenario_id.startsWith('benign')
   )
   const utilityRun = runs.find((r) => r.scenario_id.startsWith('benign'))
+
+  const [selectedRunAId, setSelectedRunAId] = useState<string | null>(() => baselineRun?.id || null)
+  const [selectedRunBId, setSelectedRunBId] = useState<string | null>(() => defendedRun?.id || null)
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -203,6 +207,15 @@ export const DefenseLabScreen: React.FC<DefenseLabScreenProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Interactive A/B Regression Comparison */}
+      <ComparisonView
+        runs={runs}
+        runAId={selectedRunAId}
+        runBId={selectedRunBId}
+        onSelectRunA={setSelectedRunAId}
+        onSelectRunB={setSelectedRunBId}
+      />
     </div>
   )
 }

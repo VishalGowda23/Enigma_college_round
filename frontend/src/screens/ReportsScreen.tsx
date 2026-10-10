@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import type { RunRecord, Finding, TraceEvent } from '../types'
 
 interface ReportsScreenProps {
@@ -15,6 +15,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
   allRuns,
 }) => {
   const [copied, setCopied] = useState(false)
+  const reportDate = useMemo(() => new Date().toLocaleDateString(), [])
 
   const baselineRuns = allRuns.filter((r) => !r.defense_enabled && !r.scenario_id.startsWith('benign'))
   const defendedRuns = allRuns.filter((r) => r.defense_enabled && !r.scenario_id.startsWith('benign'))
@@ -102,7 +103,7 @@ All findings were verified independently by Exploit Oracle inspecting actual env
             AI Agent Security Evaluation & Invariant Audit
           </h1>
           <div className="text-[11px] text-[#859087] mt-1 flex items-center gap-3">
-            <span>Date: {new Date().toLocaleDateString()}</span>
+            <span>Date: {reportDate}</span>
             <span>•</span>
             <span>Target: Support Assistant Agent</span>
             <span>•</span>

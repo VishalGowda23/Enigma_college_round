@@ -59,7 +59,7 @@ export function App() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [loadData])
 
   // Load events & findings whenever selectedRunId changes
   useEffect(() => {
@@ -77,8 +77,8 @@ export function App() {
       if (isMounted) {
         setEvents(evList)
         setFindings(findList)
-        if (evList.length > 0 && !selectedEventId) {
-          setSelectedEventId(evList[0].id)
+        if (evList.length > 0) {
+          setSelectedEventId((prev) => prev || evList[0].id)
         }
       }
     })
