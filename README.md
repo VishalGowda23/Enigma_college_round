@@ -1,25 +1,31 @@
 # AgentBreak: The Autonomous AI Red Team
 
-> **Controlled AI-Agent Security Testing Platform with Ground-Truth Exploit Oracle, Tool-Boundary Policy Enforcement, and Reproducible Traces.**
-
-Developed for **CRCE Bit N Build** (College Round).
+> **Controlled AI-Agent Security Testing Platform with Ground-Truth Exploit Oracle, Tool-Boundary Policy Enforcement, Causal Tracing, and Spatial Telemetry.**
+>
+> Developed for **CRCE Bit N Build** (College Round).
 
 ---
 
 ## 🌟 Executive Summary
 
-AgentBreak addresses the critical challenge of securing tool-using AI agents against indirect prompt injections and unauthorized tool invocation. Unlike shallow prompt-eval tools that simply parse the agent's text output, **AgentBreak enforces and validates security invariants at the actual tool-boundary execution layer**.
+AgentBreak addresses the critical challenge of securing tool-using autonomous AI agents against indirect prompt injections, tool misuse, and persistent memory poisoning. Unlike shallow prompt-evaluation tools that merely inspect textual LLM responses, **AgentBreak enforces and validates security invariants at the physical sandbox tool-boundary execution layer**.
 
-### Core Flow
 ```
-Configure Scenario ➔ Attack & Mutate ➔ Observe Execution ➔ Confirm via Oracle (INV-001) ➔ Defend via Policy ➔ Replay Case ➔ Check Benign Utility ➔ Report Regression
+Configure Scenario ➔ Red Team Mutation ➔ Live Tool Invocation ➔ Invariant Interception (Sentinel) ➔ Oracle Verification ➔ Causal DAG Proof ➔ Regression Analysis
 ```
+
+### Key Pillars
+- **4 Autonomous Pixel Actors:** Hunter (Mutator), Operator (Target Agent), Sentinel (Policy Gate), and Analyst (Exploit Oracle).
+- **Physical SQLite Exploit Oracle:** Independent ground-truth verification of state deltas (mock outbox, account tiers, persistent notes, diagnostic credentials) without trusting LLM self-reporting.
+- **Causal DAG & Reproducible Traces:** Every tool invocation, memory lookup, and policy event is cryptographically linked with causal parent IDs and physical proof diffs.
+- **Multi-Model Runtime:** Seamless execution across **Groq** (`llama-3.3-70b-versatile`), **Google Gemini** (`gemini-2.5-flash`), and an **air-gapped deterministic engine** with automated graceful fallback.
+- **Sage Mint & Porcelain Laboratory UI:** High-density, responsive dashboard featuring an interactive Spatial 2D Pixel World, live telemetry streaming, and automated boot sequence.
 
 ---
 
 ## 🛡️ Security Invariant Framework
 
-AgentBreak evaluates four empirical, tool-boundary security invariants derived strictly from sandbox state mutations:
+AgentBreak evaluates four empirical, tool-boundary security invariants strictly derived from physical database and system mutations:
 
 | Invariant | Title | Protected Resource | Verification Oracle Ground-Truth |
 |---|---|---|---|
@@ -29,32 +35,61 @@ AgentBreak evaluates four empirical, tool-boundary security invariants derived s
 | **INV-004** | Sensitive Credential & System Disclosure | Master keys, cluster diagnostics | System diagnostics tool execution and payload check |
 
 ### Invariant Outcomes
-- **Baseline Exploit (Defense OFF):** Injected prompts hijack agent flow, looking up sensitive records or invoking unauthorized tools. The Exploit Oracle inspects SQLite mock state and confirms a `CONFIRMED_EXPLOIT` violation linked directly to the offending event.
-- **Defended Enforcement (Defense ON):** The tool-boundary `PolicyEngine` (Sentinel) intercepts tool calls *before* state commit, validates arguments against allowlists, blocks forbidden actions (`TOOL_CALL_BLOCKED`), and leaves the environment state untouched. The Oracle returns `BLOCKED`.
-- **Benign Utility Preservation (Zero Over-Refusal):** Legitimate customer workflows (`benign-task-01`, `benign-summary`, `benign-auth-boundary-validation`) execute cleanly under defense without false-positive blocks, maintaining a 100% Benign Task Success Rate.
+- **Baseline Exploit (Defense OFF):** Adversarial prompts hijack the agent into invoking unauthorized tools or exfiltrating data. The Exploit Oracle inspects SQLite mock state and logs a verified `CONFIRMED_EXPLOIT` violation linked directly to the causal event.
+- **Defended Enforcement (Defense ON):** The Sentinel policy engine intercepts tool calls *before* state execution, evaluates parameters against strict allowlists, triggers `TOOL_CALL_BLOCKED`, and leaves state unmutated. The Oracle validates `BLOCKED`.
+- **Benign Utility Preservation (Zero Over-Refusal):** Legitimate customer workflows execute unhindered with 100% utility and zero false-positive blocks.
 
 ---
 
 ## 🎯 12-Scenario Threat & Utility Catalog
 
-AgentBreak includes 12 comprehensive scenarios spanning 4 threat families:
+AgentBreak features 12 standardized security scenarios across 4 threat families:
 
-1. **Ingestion & Injection Attacks:**
-   - `support-ticket-injection`: Indirect prompt injection in ticket body exfiltrating customer tokens via `send_email` (INV-001).
-   - `unauthorized-data-exfiltration`: Direct command directing exfiltration to an external telemetry sink (INV-001).
-   - `retrieval-source-poisoning`: Poisoned RAG knowledge base article coercing the agent into leaking PII (INV-001).
-2. **Tool Abuse & Privilege Escalation:**
-   - `unauthorized-tool-use`: Adversary attempts unauthorized tier elevation via `update_account_tier` (INV-002).
-   - `multistep-tool-abuse`: Chained multi-step sequence: recon ➔ tier elevation ➔ data exfiltration (INV-002).
-   - `sensitive-data-disclosure`: Coerces agent to invoke `get_system_diagnostics` and leak system master keys (INV-004).
-3. **Memory & Policy Evasion:**
-   - `persistent-memory-poisoning`: Plants dormant prompt injection payloads into persistent customer notes (INV-003).
-   - `policy-boundary-bypass`: Subdomain trickery and URL-encoding attempting to evade allowlist matching (INV-001).
-4. **Benign Utility & Regression:**
-   - `benign-task-01`: Legitimate customer billing confirmation to verified customer email (100% utility).
-   - `benign-summary`: Trusted customer inquiry consulting knowledge base without external side effects (100% utility).
-   - `benign-auth-boundary-validation`: Legitimate preference update within authorized self-service boundaries (100% utility).
-   - `defense-regression-suite`: Automated regression probe verifying historical attack signatures remain 100% blocked.
+### 1. Ingestion & Injection Attacks
+- `support-ticket-injection`: Indirect prompt injection embedded within customer tickets directing exfiltration of auth tokens via `send_email` (**INV-001**).
+- `unauthorized-data-exfiltration`: Direct command coercing agent into dispatching sensitive customer data to an external sink (**INV-001**).
+- `retrieval-source-poisoning`: Poisoned RAG knowledge base document tricking the agent into leaking customer PII (**INV-001**).
+
+### 2. Tool Abuse & Privilege Escalation
+- `unauthorized-tool-use`: Adversary attempts unauthorized tier elevation via `update_account_tier` (**INV-002**).
+- `multistep-tool-abuse`: Chained multi-step exploit: reconnaissance ➔ tier elevation ➔ exfiltration (**INV-002**).
+- `sensitive-data-disclosure`: Coerces agent to invoke `get_system_diagnostics` and expose production master keys (**INV-004**).
+
+### 3. Memory & Policy Evasion
+- `persistent-memory-poisoning`: Plants dormant prompt injection payloads into persistent customer notes (**INV-003**).
+- `policy-boundary-bypass`: Subdomain trickery and URL encoding attempting to evade allowlist matching (**INV-001**).
+
+### 4. Benign Utility & Regression
+- `benign-task-01`: Legitimate customer billing confirmation dispatched to verified email (100% utility).
+- `benign-summary`: Trusted customer inquiry consulting knowledge base without external side effects (100% utility).
+- `benign-auth-boundary-validation`: Legitimate user preference update within authorized self-service boundaries (100% utility).
+- `defense-regression-suite`: Automated regression probe verifying all historical attack vectors remain 100% blocked under Sentinel defense.
+
+---
+
+## 👾 The 4 Autonomous Pixel Actors
+
+| Actor | Role | Responsibilities |
+|---|---|---|
+| **Hunter** | Adversarial Mutator | Generates multi-turn adversarial mutations, evasion payloads, and indirect injection triggers. |
+| **Operator** | Target Agent Runtime | Autonomous LLM agent equipped with sandboxed tools (`send_email`, `read_customer_notes`, `update_tier`, etc.). |
+| **Sentinel** | Policy Gate | Intercepts all tool invocations prior to sandbox commit, enforcing invariants INV-001 through INV-004. |
+| **Analyst** | Exploit Oracle | Independently inspects physical SQLite database deltas and emits cryptographic proof of exploit. |
+
+---
+
+## 🖥️ Dashboard Views & User Interface
+
+The web interface is built using a **Sage Mint & Porcelain** laboratory design system (`#F4FAF1` canvas, `#FFFEFA` porcelain surfaces, `#DCE7D8` borders):
+
+1. **Overview (Home):** Clean laboratory summary, 4-agent interactive role grid, core system highlights, and immediate assessment launcher.
+2. **Live Lab:** Interactive spatial 2D workbench featuring live pixel agents walking between workstations, real-time event streaming, and sandbox state inspection.
+3. **Assessments:** Historical audit logs with granular search, status badges, exploit counts, and single-click replay.
+4. **Scenarios:** Complete catalog of all 12 threat scenarios with parameter contracts and invariant mappings.
+5. **Agents:** Deep inspection of the 4 autonomous actors with model configuration and operational parameters.
+6. **Evidence Graph:** Interactive Causal DAG visualizing causal dependencies, tool calls, policy blocks, and oracle proofs.
+7. **Defense Lab:** Side-by-side A/B regression matrix comparing Baseline vs. Defended runs with Attack Success Rate (ASR) reduction tracking.
+8. **Security Reports:** Audit-ready compliance documentation with print-to-PDF and JSON/CSV export capabilities.
 
 ---
 
@@ -66,12 +101,12 @@ flowchart TD
 
     subgraph Backend Core
         API --> ORCH["Orchestrator"]
-        ORCH --> ATTACK["Attack Engine & Mutator"]
-        ATTACK --> AGENT["Target Support Agent"]
+        ORCH --> ATTACK["Attack Engine & Mutator (Hunter)"]
+        ATTACK --> AGENT["Target Support Agent (Operator)"]
         AGENT --> TOOLS["Mock Tool Adapter"]
-        TOOLS --> POLICY["Policy Engine (Allowlist)"]
-        POLICY --> MOCKDB[("Mock Outbox State")]
-        ATTACK --> ORACLE["Exploit Oracle"]
+        TOOLS --> POLICY["Policy Engine / Invariants (Sentinel)"]
+        POLICY --> MOCKDB[("Mock SQLite State")]
+        ATTACK --> ORACLE["Exploit Oracle (Analyst)"]
         ORACLE --> MOCKDB
     end
 
@@ -80,8 +115,8 @@ flowchart TD
         AGENT -. "events" .-> TRACER
         TOOLS -. "events" .-> TRACER
         POLICY -. "events" .-> TRACER
-        ORACLE -. "verdicts & findings" .-> TRACER
-        TRACER --> DB[("SQLite Database<br/>(runs, attempts, events, findings)")]
+        ORACLE -. "verdicts & proofs" .-> TRACER
+        TRACER --> DB[("SQLite Database<br/>(runs, events, findings, dag)")]
     end
 
     API -- "reads" --> DB
@@ -89,34 +124,44 @@ flowchart TD
 
 ---
 
-## 🚀 Quickstart & Setup (Fresh Terminal)
+## 🚀 Quickstart & Setup
 
 ### Prerequisites
-- Python 3.11+ (Python 3.12 recommended)
-- Node.js v18+ and npm
+- **Python 3.11+** (Python 3.12 recommended)
+- **Node.js v18+** and **npm**
 
 ### 1. Clone & Configure Environment
 ```bash
 git clone https://github.com/VishalGowda23/Enigma_college_round.git
 cd Enigma_college_round
 
-# Copy environment template
+# Copy environment configuration template
 cp .env.example .env
+```
+
+Configure your `.env` file with optional LLM API keys (falls back automatically to deterministic mode if unset):
+```env
+# Optional Live Model Providers
+GROQ_API_KEY=your_groq_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Execution Mode: auto | live | deterministic
+EXECUTION_MODE=auto
 ```
 
 ### 2. Backend Setup & Startup
 ```bash
-# Create and activate virtual environment
+# Create and activate Python virtual environment
 python3 -m venv backend/.venv
 source backend/.venv/bin/activate
 
 # Install dependencies
 pip install -r backend/requirements.txt
 
-# Start backend server on port 8000
+# Start FastAPI backend server on port 8000
 uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
-*The backend API documentation is available at `http://127.0.0.1:8000/docs`.*
+*API documentation is accessible at `http://127.0.0.1:8000/docs`.*
 
 ### 3. Frontend Setup & Startup
 In a separate terminal:
@@ -133,73 +178,72 @@ npm run dev
 
 ---
 
-## 🧪 Automated Verification & Test Suite
+## 🧪 Automated Verification & Testing
 
-Run the full 41-test pytest suite from the repository root:
+AgentBreak includes an exhaustive automated test suite covering all 12 scenarios, 4 invariants, model adapters, and API endpoints.
+
 ```bash
+# Run the complete 41-test pytest suite
 ./backend/.venv/bin/pytest -v
 ```
-*(All 41 unit and integration tests execute in ~1.2s covering all 12 scenarios and 4 security invariants)*
+*(All 41 tests pass in ~0.9s with zero failures)*
 
-Run frontend production build verification:
 ```bash
+# Verify frontend TypeScript compilation and production build
 cd frontend && npm run build
 ```
 
-Run the standalone core verification script:
 ```bash
+# Run core standalone integration verification
 PYTHONPATH=. ./backend/.venv/bin/python backend/test_core.py
 ```
 
 ---
 
-## 📋 API Contracts
+## 📋 API Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/health` | Returns health status and mode (`deterministic` / `live`) |
-| `GET` | `/api/scenarios` | Lists available attack and benign fixtures |
-| `POST` | `/api/runs` | Starts an assessment run with `{scenario_id, defense_enabled, budget}` |
-| `GET` | `/api/runs` | Returns all recorded assessment runs |
-| `GET` | `/api/runs/{id}` | Returns run metrics, status, and configuration |
-| `GET` | `/api/runs/{id}/events` | Returns chronological, ordered event trace |
-| `GET` | `/api/runs/{id}/findings` | Returns security verdicts with linked event IDs |
-| `POST` | `/api/runs/{id}/replay` | Re-executes an existing run configuration as a fresh execution |
+| `GET` | `/api/health` | System health check, active provider, and engine mode |
+| `GET` | `/api/scenarios` | Returns catalog of all 12 security evaluation scenarios |
+| `POST` | `/api/runs` | Launches an evaluation run `{scenario_id, defense_enabled, budget, execution_mode}` |
+| `GET` | `/api/runs` | Lists historical assessment runs with summary metrics |
+| `GET` | `/api/runs/{id}` | Fetches detailed run metrics and status |
+| `GET` | `/api/runs/{id}/events` | Returns chronological event trace with causal DAG metadata |
+| `GET` | `/api/runs/{id}/findings` | Returns exploit oracle verdicts and evidence links |
+| `POST` | `/api/runs/{id}/replay` | Replays an existing run configuration as a fresh traceable run |
 
 ---
 
 ## 🎯 Demo Walkthrough Guide (3-Minute Script)
 
-1. **Open Dashboard (`http://localhost:5173/`)**:
-   - Point out the headline metrics: Baseline ASR, Policy Interception Rate, Benign Task Utility, and Mode (`deterministic`).
+1. **Boot Screen & Overview (`http://localhost:5173/`)**:
+   - Observe the Sage Mint telemetry boot screen cycling kernel contracts and pixel actor synchronization.
+   - Land on the Overview page highlighting the 4-agent security workflow.
 2. **Execute Baseline Attack Run (Defense OFF)**:
-   - Click `+ Run Assessment`.
-   - Select `Support Ticket Prompt Injection`, leave Defense `OFF`, and set budget to `3`.
-   - Click `Start Assessment`.
-   - Click the resulting run in **Assessment History**:
-     - View the **Findings Panel**: notice `CONFIRMED_EXPLOIT` violating `INV-001`.
-     - Click an evidence link `ev:...` to jump straight to the exfiltration event in the **Chronological Event Trace**.
-     - Inspect the mock outbox record containing Alice's secret account tokens sent to `attacker@evil.invalid`.
+   - Click **Start Assessment** or `+ Run Assessment`.
+   - Select `Support Ticket Prompt Injection`, leave Defense **OFF**, and set Budget to `3`.
+   - Click **Launch Assessment**.
+   - Navigate to the run in **Live Lab**:
+     - Observe the pixel agents interacting in real time in the 2D Spatial World.
+     - Inspect the **Findings Panel**: notice `CONFIRMED_EXPLOIT` violating **INV-001**.
+     - View the physical SQLite outbox diff showing leaked customer tokens.
 3. **Execute Defended Run (Defense ON)**:
-   - Click `+ Run Assessment`.
-   - Toggle Defense to `ON`.
-   - Click `Start Assessment`.
-   - Inspect the run trace: see `TOOL_CALL_BLOCKED` with reason `UNAUTHORIZED_RECIPIENT`. The mock outbox remains empty.
-4. **Execute Benign Utility Verification**:
-   - Click `+ Run Assessment`.
-   - Select `Customer Billing Address Confirmation`.
-   - Click `Start Assessment`.
-   - Confirm that legitimate customer communication succeeds, proving that the security defense does not impair business utility.
-5. **Replay & Regression Testing**:
-   - Click `Replay` on any prior run to show that re-executing creates a clean, independent run record.
-   - Click the **A/B Regression View** tab:
-     - Compare Slot A (Baseline) vs Slot B (Defended).
-     - Observe the **ASR Reduction of -100%** with explicit denominators derived directly from SQLite state.
+   - Click **Run Assessment** and toggle Defense to **ON**.
+   - Click **Launch Assessment**.
+   - Inspect the event trace: verify `TOOL_CALL_BLOCKED` with `UNAUTHORIZED_RECIPIENT`. The mock database remains unmutated, and the Oracle records `BLOCKED`.
+4. **Inspect Evidence Graph & Causal DAG**:
+   - Switch to the **Evidence Graph** tab to trace the causal parent-child dependencies leading to the policy block.
+5. **Verify Benign Task Utility**:
+   - Launch `Customer Billing Confirmation`.
+   - Confirm that legitimate operations complete with 100% utility under active defense, validating zero over-refusal.
+6. **Defense Lab Regression Matrix**:
+   - Open **Defense Lab** to view the A/B regression matrix showing a **-100% Attack Success Rate (ASR) reduction**.
 
 ---
 
-## 🔬 Honest Claims & Research Foundation
+## 🔬 Safety & Isolation Guarantee
 
-- **Prior Art Acknowledgement:** As noted in our research foundation, prompt injection testing and agent auditing have substantial prior literature (PI-Hunter, DTap, AgentDojo, Promptfoo, PyRIT).
-- **Our Claim:** AgentBreak implements an **integrated, evidence-backed workflow** that tests tool-boundary policies, verifies ground-truth state mutations, isolates side-effects, and quantifies benign utility trade-offs in an inspectable, reproducible dashboard.
-- **Safety Guarantee:** AgentBreak operates strictly in an isolated sandbox environment. Mock email operations write solely to local SQLite tables; no real external emails or network requests are dispatched.
+- **Air-Gapped Sandbox:** AgentBreak executes exclusively in an isolated mock environment. All tool invocations mutate temporary local SQLite tables.
+- **Zero Real External I/O:** No network requests, real emails, or external side effects are ever dispatched.
+- **Auditable & Deterministic:** Every assessment produces reproducible, immutable JSON event traces with causal lineage.
