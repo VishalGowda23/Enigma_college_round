@@ -21,7 +21,7 @@ export const RunAssessmentModal: React.FC<RunAssessmentModalProps> = ({
   )
   const [defenseEnabled, setDefenseEnabled] = useState<boolean>(false)
   const [budget, setBudget] = useState<number>(1)
-  const [executionMode, setExecutionMode] = useState<ExecutionMode>('live_model')
+  const [executionMode, setExecutionMode] = useState<ExecutionMode>('deterministic')
   const [provider, setProvider] = useState<'gemini' | 'groq'>('gemini')
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)

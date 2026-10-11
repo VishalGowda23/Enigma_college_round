@@ -107,8 +107,8 @@ class MockToolAdapter:
                 tool_name="read_ticket",
                 actor="operator",
                 relation_type="read_from",
-                arguments_json={"ticket_id": ticket_id},
-                evidence_json={"is_malicious": ticket.is_malicious, "subject": ticket.subject},
+                arguments_json={"ticket_id": ticket_id, "subject": ticket.subject, "body": ticket.body},
+                evidence_json={"is_malicious": ticket.is_malicious, "subject": ticket.subject, "body": ticket.body},
                 message=f"Operator read ticket '{ticket_id}' with subject: '{ticket.subject}'",
             )
         return ticket
@@ -221,11 +221,16 @@ class MockToolAdapter:
             actor="system",
             parent_event_id=eval_ev.id,
             relation_type="executed_as",
-            arguments_json={"recipient": recipient},
+            arguments_json={"recipient": recipient, "content": content},
             policy_decision=PolicyDecision.ALLOWED.value,
             reason_code=policy_res.reason_code.value,
-            evidence_json={"outbox_id": email.id, "state_mutated": True},
-            message=f"Email committed to mock_outbox (ID: {email.id})",
+            evidence_json={
+                "outbox_id": email.id,
+                "recipient": email.recipient,
+                "content": email.content,
+                "state_mutated": True,
+            },
+            message=f"Email committed to mock_outbox (ID: {email.id}, Recipient: {recipient})",
         )
 
         return ToolResult(

@@ -148,6 +148,9 @@ class AttackEngine:
                     "candidate_id": current_cand.id,
                     "parent_id": current_cand.parent_id,
                     "mutation_method": current_cand.mutation_method,
+                    "ticket_id": current_cand.ticket.id,
+                    "ticket_subject": current_cand.ticket.subject,
+                    "ticket_body": current_cand.ticket.body,
                 },
                 message=f"Hunter starting attempt {i+1}/{budget} with method '{current_cand.mutation_method}'",
             )
