@@ -131,7 +131,7 @@ export const TraceTimeline: React.FC<TraceTimelineProps> = ({
               <div
                 key={ev.id}
                 onClick={() => onSelectEvent(ev.id)}
-                className={`p-2.5 rounded-lg transition-all cursor-pointer flex items-center justify-between text-xs ${
+                className={`p-2 sm:p-2.5 rounded-lg transition-all cursor-pointer flex items-center justify-between gap-2 text-xs ${
                   isSelected
                     ? 'bg-[#EEF5E9] border border-[#76A889] shadow-2xs'
                     : isPlayhead
@@ -139,29 +139,29 @@ export const TraceTimeline: React.FC<TraceTimelineProps> = ({
                     : 'hover:bg-[#F4FAF1]'
                 }`}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1 pr-1">
                   {/* Sequence Number */}
-                  <span className="font-mono text-[11px] font-semibold text-[#859087] w-6">
+                  <span className="font-mono text-[11px] font-semibold text-[#859087] w-6 shrink-0">
                     #{ev.sequence_number}
                   </span>
 
                   {/* Actor Mini Sprite */}
-                  <div className="p-0.5 rounded bg-[#FFFEFA] border border-[#DCE7D8]">
+                  <div className="p-0.5 rounded bg-[#FFFEFA] border border-[#DCE7D8] shrink-0">
                     <PixelAgent role={actorRole} size={18} />
                   </div>
 
                   {/* Event Type & Tool Info */}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-[#202A25]">{ev.event_type}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-semibold text-[#202A25] truncate">{ev.event_type}</span>
                       {ev.tool_name && (
-                        <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-[#EEF5E9] font-medium text-[#202A25]">
+                        <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-[#EEF5E9] font-medium text-[#202A25] shrink-0">
                           {ev.tool_name}
                         </span>
                       )}
                     </div>
                     {ev.message && (
-                      <p className="text-[11px] text-[#66736A] truncate max-w-md mt-0.5">
+                      <p className="text-[11px] text-[#66736A] truncate mt-0.5">
                         {ev.message}
                       </p>
                     )}
@@ -169,10 +169,10 @@ export const TraceTimeline: React.FC<TraceTimelineProps> = ({
                 </div>
 
                 {/* Right Badges */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                   {getRelationBadge(ev.relation_type)}
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] border ${getStatusColor(ev)}`}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap border shrink-0 ${getStatusColor(ev)}`}
                   >
                     {ev.policy_decision || (ev.event_type === 'TOOL_CALL_BLOCKED' ? 'BLOCKED' : 'EVENT')}
                   </span>

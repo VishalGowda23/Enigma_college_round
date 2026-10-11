@@ -317,7 +317,7 @@ export const LiveLabScreen: React.FC<LiveLabScreenProps> = ({
       {/* Split-Pane Forensic Workbench: Timeline + Event Details Inspector */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 min-h-[360px] lg:h-[360px]">
         {/* Left Column (7 cols): Event Timeline with Controls */}
-        <div className="lg:col-span-7 h-full flex flex-col">
+        <div className="lg:col-span-7 h-full flex flex-col min-w-0">
           <TraceTimeline
             events={events}
             selectedEventId={selectedEventId}
